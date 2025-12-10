@@ -1,4 +1,5 @@
 import VideoEditorLoader from "@/components/VideoEditorLoader";
+import Navbar from "@/components/Navbar";
 
 export const metadata = {
     title: "Video Editor",
@@ -11,12 +12,15 @@ export default async function EditorPage({ searchParams }) {
 
     return (
         <main className="min-h-screen bg-slate-950">
-            <VideoEditorLoader
-                videoUrl={videoUrl}
-                type={type}
-                initialTitle={title}
-                initialReferer={referer}
-            />
+            <Navbar />
+            <div className="pt-20">
+                <VideoEditorLoader
+                    videoUrl={videoUrl}
+                    type={type}
+                    initialTitle={title}
+                    initialReferer={referer}
+                />
+            </div>
         </main>
     );
 }

@@ -128,7 +128,8 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                     const response = await fetch(fetchProxy(targetVideo), { signal });
                     if (!response.ok) {
                         const errorText = await response.text();
-                        throw new Error(`Failed to fetch manifest: ${response.status} ${response.statusText} - ${errorText}`);
+                        alert(`Failed to fetch manifest: ${response.status} ${response.statusText} - ${errorText}`);
+                        return;
                     }
                     const manifestText = await response.text();
 
