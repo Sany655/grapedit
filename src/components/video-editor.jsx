@@ -89,6 +89,16 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
         else setActiveSegmentId(null);
     };
 
+    const handleManualTimeChange = (e) => {
+        const time = parseFloat(e.target.value);
+        if (!isNaN(time) && time >= 0 && time <= duration) {
+            setCurrentTime(time);
+            if (videoRef.current) {
+                videoRef.current.currentTime = time;
+            }
+        }
+    };
+
     const trimVideo = async () => {
         if (!loaded) return;
         if (!videoFile && (initialVideo?.includes('.m3u8') || initialType === 'application/x-mpegURL')) {
@@ -244,135 +254,135 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
                 {/* Left Column: Input */}
                 {/* <div className="space-y-6">
                 </div> */}
-                    <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
-                        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                            <Upload size={20} className="text-blue-400" />
-                            Source
-                        </h2>
+                <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
+                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <Upload size={20} className="text-blue-400" />
+                        Source
+                    </h2>
 
-                        {!videoUrl ? (
-                            <div className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-blue-500 transition-colors cursor-pointer relative">
-                                <input
-                                    type="file"
-                                    accept="video/*"
-                                    onChange={handleFileChange}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                />
-                                <Upload className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-                                <p className="text-slate-400">Drag & drop or click to upload</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <video
-                                    ref={videoRef}
-                                    src={videoUrl}
-                                    controls
-                                    className="w-full rounded-lg bg-black aspect-video"
-                                    onLoadedMetadata={onLoadedMetadata}
-                                    onTimeUpdate={onTimeUpdate}
-                                />
-                                <div className="flex justify-between text-sm text-slate-400">
-                                    <div className="flex justify-between items-center w-full">
-                                        <button onClick={() => { setVideoUrl(""); setVideoFile(null); }} className="text-red-400 hover:text-red-300">
-                                            Remove
-                                        </button>
+                    {!videoUrl ? (
+                        <div className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-blue-500 transition-colors cursor-pointer relative">
+                            <input
+                                type="file"
+                                accept="video/*"
+                                onChange={handleFileChange}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <Upload className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+                            <p className="text-slate-400">Drag & drop or click to upload</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <video
+                                ref={videoRef}
+                                src={videoUrl}
+                                controls
+                                className="w-full rounded-lg bg-black aspect-video"
+                                onLoadedMetadata={onLoadedMetadata}
+                                onTimeUpdate={onTimeUpdate}
+                            />
+                            <div className="flex justify-between text-sm text-slate-400">
+                                <div className="flex justify-between items-center w-full">
+                                    <button onClick={() => { setVideoUrl(""); setVideoFile(null); }} className="text-red-400 hover:text-red-300">
+                                        Remove
+                                    </button>
 
-                                        {videoFile && (
-                                            <a
-                                                href={videoUrl}
-                                                download={fileName}
-                                                className="text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                                            >
-                                                <Download size={16} /> Save Original
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {videoUrl && (
-                        <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
-                            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                                <Scissors size={20} className="text-purple-400" />
-                                Edit
-                            </h2>
-
-                            <div className="mb-6 px-1 space-y-2">
-                                <div className="flex justify-between text-xs text-slate-400">
-                                    <span>Timeline</span>
-                                    <div className="flex gap-2 text-white">
-                                        <span>Current: {formatTime(currentTime)}</span>
-                                        <span>Total: {formatTime(duration)}</span>
-                                    </div>
-                                </div>
-                                <div
-                                    ref={timelineRef}
-                                    onClick={handleTimelineClick}
-                                    className="relative h-16 bg-slate-900 rounded-lg cursor-pointer overflow-hidden border border-slate-700"
-                                >
-                                    <div className="absolute inset-0 opacity-20 bg-[repeating-linear-gradient(45deg,#ef4444,#ef4444_10px,#7f1d1d_10px,#7f1d1d_20px)]"></div>
-                                    {segments.map(seg => (
-                                        <div
-                                            key={seg.id}
-                                            className={`absolute h-full top-0 border-r border-slate-800/50 transition-colors ${activeSegmentId === seg.id ? 'bg-blue-600/80 z-10' : 'bg-green-600/60 hover:bg-green-500/70'}`}
-                                            style={{
-                                                left: `${(seg.start / duration) * 100}%`,
-                                                width: `${((seg.end - seg.start) / duration) * 100}%`
-                                            }}
+                                    {videoFile && (
+                                        <a
+                                            href={videoUrl}
+                                            download={fileName}
+                                            className="text-blue-400 hover:text-blue-300 flex items-center gap-1"
                                         >
-                                            {activeSegmentId === seg.id && (
-                                                <div className="absolute inset-0 border-2 border-yellow-400 pointer-events-none"></div>
-                                            )}
-                                        </div>
-                                    ))}
-                                    <div
-                                        className="absolute top-0 bottom-0 w-0.5 bg-white z-20 pointer-events-none shadow-[0_0_10px_rgba(255,255,255,0.5)]"
-                                        style={{ left: `${(currentTime / duration) * 100}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col gap-3">
-                                <div className="grid grid-cols-3 gap-2">
-                                    <button
-                                        onClick={handleUndo}
-                                        disabled={historyIndex <= 0}
-                                        className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
-                                    >
-                                        <Undo size={18} /> Undo
-                                    </button>
-                                    <button
-                                        onClick={handleDeleteSegment}
-                                        disabled={!activeSegmentId}
-                                        className="px-4 py-2 bg-slate-700 hover:bg-red-500 text-white rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
-                                    >
-                                        <Trash2 size={18} /> Delete
-                                    </button>
-                                    <button
-                                        onClick={() => handleSplit(currentTime)}
-                                        disabled={!activeSegmentId}
-                                        className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
-                                    >
-                                        <Scissors size={18} /> Split
-                                    </button>
-                                </div>
-
-                                <button
-                                    onClick={trimVideo}
-                                    disabled={!loaded || isProcessing || isExporting || segments.length === 0}
-                                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-500 hover:to-green-500 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-900/20"
-                                >
-                                    {isProcessing || isExporting ? (
-                                        <><Loader2 className="animate-spin" /> Processing...</>
-                                    ) : (
-                                        <><Download size={18} /> Export Merged Video</>
+                                            <Download size={16} /> Save Original
+                                        </a>
                                     )}
-                                </button>
+                                </div>
                             </div>
                         </div>
                     )}
+                </div>
+
+                {videoUrl && (
+                    <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
+                        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                            <Scissors size={20} className="text-purple-400" />
+                            Edit
+                        </h2>
+
+                        <div className="mb-6 px-1 space-y-2">
+                            <div className="flex justify-between text-xs text-slate-400">
+                                <span>Timeline</span>
+                                <div className="flex gap-2 text-white">
+                                    <span>Current: <input type="number" min="0" max={duration} step="0.25" value={currentTime} onChange={handleManualTimeChange} className="w-20 bg-slate-700 border-none rounded px-2 py-0.5 text-xs" /></span>
+                                    <span>Total: {formatTime(duration)}</span>
+                                </div>
+                            </div>
+                            <div
+                                ref={timelineRef}
+                                onClick={handleTimelineClick}
+                                className="relative h-16 bg-slate-900 rounded-lg cursor-pointer overflow-hidden border border-slate-700"
+                            >
+                                <div className="absolute inset-0 opacity-20 bg-[repeating-linear-gradient(45deg,#ef4444,#ef4444_10px,#7f1d1d_10px,#7f1d1d_20px)]"></div>
+                                {segments.map(seg => (
+                                    <div
+                                        key={seg.id}
+                                        className={`absolute h-full top-0 border-r border-slate-800/50 transition-colors ${activeSegmentId === seg.id ? 'bg-blue-600/80 z-10' : 'bg-green-600/60 hover:bg-green-500/70'}`}
+                                        style={{
+                                            left: `${(seg.start / duration) * 100}%`,
+                                            width: `${((seg.end - seg.start) / duration) * 100}%`
+                                        }}
+                                    >
+                                        {activeSegmentId === seg.id && (
+                                            <div className="absolute inset-0 border-2 border-yellow-400 pointer-events-none"></div>
+                                        )}
+                                    </div>
+                                ))}
+                                <div
+                                    className="absolute top-0 bottom-0 w-0.5 bg-white z-20 pointer-events-none shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                                    style={{ left: `${(currentTime / duration) * 100}%` }}
+                                ></div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <div className="grid grid-cols-3 gap-2">
+                                <button
+                                    onClick={handleUndo}
+                                    disabled={historyIndex <= 0}
+                                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+                                >
+                                    <Undo size={18} /> Undo
+                                </button>
+                                <button
+                                    onClick={handleDeleteSegment}
+                                    disabled={!activeSegmentId}
+                                    className="px-4 py-2 bg-slate-700 hover:bg-red-500 text-white rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+                                >
+                                    <Trash2 size={18} /> Delete
+                                </button>
+                                <button
+                                    onClick={() => handleSplit(currentTime)}
+                                    disabled={!activeSegmentId}
+                                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+                                >
+                                    <Scissors size={18} /> Split
+                                </button>
+                            </div>
+
+                            <button
+                                onClick={trimVideo}
+                                disabled={!loaded || isProcessing || isExporting || segments.length === 0}
+                                className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-500 hover:to-green-500 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-900/20"
+                            >
+                                {isProcessing || isExporting ? (
+                                    <><Loader2 className="animate-spin" /> Processing...</>
+                                ) : (
+                                    <><Download size={18} /> Export Merged Video</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
