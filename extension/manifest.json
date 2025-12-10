@@ -1,0 +1,32 @@
+{
+    "manifest_version": 3,
+    "name": "Grapedit Video Grabber",
+    "version": "1.1",
+    "description": "FetchV functionality clone",
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "storage",
+        "downloads",
+        "webRequest"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "http://localhost:3000/*"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ]
+}
