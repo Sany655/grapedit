@@ -127,7 +127,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     if (request.action === 'OPEN_EDITOR') {
         const { url, type, title, referer } = request;
-        const editorUrl = `http://localhost:3000/editor?video=${encodeURIComponent(url)}&type=${encodeURIComponent(type)}&title=${encodeURIComponent(title || "video")}&referer=${encodeURIComponent(referer || "")}`;
+        const editorUrl = `https://grapedit.vercel.app/editor?video=${encodeURIComponent(url)}&type=${encodeURIComponent(type)}&title=${encodeURIComponent(title || "video")}&referer=${encodeURIComponent(referer || "")}`;
         chrome.tabs.create({ url: editorUrl });
     }
 
