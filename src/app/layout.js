@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  metadataBase: new URL("https://grapedit-jbn06kxje-sany655s-projects.vercel.app"),
+  metadataBase: new URL("https://projects.vercel.app/projects.vercel.app"),
   title: {
     default: "Grapedit - Advanced Video Editor",
     template: "%s | Grapedit",
@@ -36,7 +36,7 @@ export const metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://grapedit-jbn06kxje-sany655s-projects.vercel.app",
+    url: "https://projects.vercel.app/projects.vercel.app",
     title: "Grapedit - Advanced Video Editor",
     description: "Professional video editing directly in your browser. Download protected streams, trim with frame accuracy, and merge clips instantly.",
     siteName: "Grapedit",

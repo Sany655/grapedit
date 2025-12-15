@@ -5,6 +5,6 @@ export default function robots() {
             allow: '/',
             disallow: '/private/',
         },
-        sitemap: 'https://grapedit-jbn06kxje-sany655s-projects.vercel.app/sitemap.xml',
+        sitemap: 'https://projects.vercel.app/projects.vercel.app/sitemap.xml',
     };
 }
