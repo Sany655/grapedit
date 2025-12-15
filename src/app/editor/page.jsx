@@ -2,7 +2,7 @@ import VideoEditorLoader from "@/components/VideoEditorLoader";
 import Navbar from "@/components/Navbar";
 
 export const metadata = {
-    title: "Video Editor",
+    title: "Editor",
     description: "Trimming and editing videos in the browser",
 };
 

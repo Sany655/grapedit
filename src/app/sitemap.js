@@ -1,0 +1,18 @@
+export default function sitemap() {
+    const baseUrl = 'https://grapedit-jbn06kxje-sany655s-projects.vercel.app';
+
+    return [
+        {
+            url: baseUrl,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 1,
+        },
+        {
+            url: `${baseUrl}/editor`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.8,
+        },
+    ];
+}
