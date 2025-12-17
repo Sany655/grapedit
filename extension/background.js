@@ -1,5 +1,6 @@
 // background.js
-
+// const base_url = "https://grapedit.vercel.app";
+const base_url = "http://localhost:3000";
 // Store detected videos: { tabId: [ videoObjects ] }
 const videoCache = {};
 // Store referers temporarily: { requestId: refererUrl }
@@ -127,7 +128,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     if (request.action === 'OPEN_EDITOR') {
         const { url, type, title, referer } = request;
-        const editorUrl = `https://grapedit.vercel.app/editor?video=${encodeURIComponent(url)}&type=${encodeURIComponent(type)}&title=${encodeURIComponent(title || "video")}&referer=${encodeURIComponent(referer || "")}`;
+        const editorUrl = `${base_url}/editor?video=${encodeURIComponent(url)}&type=${encodeURIComponent(type)}&title=${encodeURIComponent(title || "video")}&referer=${encodeURIComponent(referer || "")}`;
         chrome.tabs.create({ url: editorUrl });
     }
 
