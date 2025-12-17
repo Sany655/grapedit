@@ -19,7 +19,7 @@ export default function Navbar() {
                         Documentation
                     </a>
                     <Link
-                        href="/editor"
+                        href="/videodownloader"
                         className="px-4 py-2 bg-white text-slate-900 rounded-full font-semibold text-sm hover:bg-slate-200 transition-colors flex items-center gap-2"
                     >
                         Open Editor <ArrowRight size={16} />

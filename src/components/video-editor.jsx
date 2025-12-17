@@ -3,13 +3,13 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { fetchFile } from "@ffmpeg/util";
-import { Upload, Scissors, Download, Loader2, Play, History, Trash2, Undo } from "lucide-react";
+import { Upload, Scissors, Download, Loader2, Play, History, Trash2, Undo, Settings, Edit2 } from "lucide-react";
 import DownloadManager from "./DownloadManager";
 import { useVideoDownload } from "./video-editor/useVideoDownload";
 import { useSegmentEditor } from "./video-editor/useSegmentEditor";
 import { ProcessingScreen } from "./video-editor/ProcessingScreen";
 
-export default function VideoEditor({ initialVideo, initialType, initialTitle, initialReferer }) {
+export default function VideoEditor({ initialVideo, initialType, initialTitle, initialReferer, initialResourceName }) {
     const {
         downloadProgress, downloadedBytes, totalBytesEst, downloadSpeed, isPaused, processingText, isProcessing,
         downloadStarted, videoFile, videoUrl, fileName, loaded, ffmpegRef, currentDownloadId,
@@ -24,6 +24,8 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
     const [currentTime, setCurrentTime] = useState(0);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [namingMode, setNamingMode] = useState('title'); // 'title' or 'resource'
     const videoRef = useRef(null);
     const timelineRef = useRef(null);
 
@@ -208,21 +210,95 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
                 downloadProgress={downloadProgress}
                 onTogglePause={togglePause}
                 onCancel={cancelDownload}
+                fileName={fileName}
             />
 
             {!isProcessing && !downloadStarted && initialVideo && (
                 <div className="mb-8 bg-slate-800 p-6 rounded-2xl border border-blue-500/30 shadow-xl animate-in fade-in slide-in-from-top-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-lg font-bold text-white mb-2">Ready to Download</h3>
-                            <p className="text-slate-400 text-sm">Target: {fileName}</p>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex-1 mr-4">
+                                <h3 className="text-lg font-bold text-white mb-2">Ready to Download</h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-slate-400 text-sm whitespace-nowrap">File Name:</span>
+                                    <div className="relative flex-1 max-w-md">
+                                        <input
+                                            type="text"
+                                            value={fileName}
+                                            onChange={(e) => setFileName(e.target.value)}
+                                            className="w-full bg-slate-700/50 border border-slate-600 rounded px-3 py-1 text-sm text-slate-200 focus:outline-none focus:border-blue-500 transition-colors pr-8"
+                                        />
+                                        <Edit2 size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                                    className={`p-3 rounded-lg border transition-all ${isSettingsOpen ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-700 hover:bg-slate-600 border-slate-600 text-slate-300'}`}
+                                    title="Download Settings"
+                                >
+                                    <Settings size={20} />
+                                </button>
+                                <button
+                                    onClick={startDownloadProcess}
+                                    className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2"
+                                >
+                                    <Download size={20} /> Start Download
+                                </button>
+                            </div>
                         </div>
-                        <button
-                            onClick={startDownloadProcess}
-                            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2"
-                        >
-                            <Download size={20} /> Start Download
-                        </button>
+
+                        {isSettingsOpen && (
+                            <div className="pt-4 border-t border-slate-700 animate-in fade-in slide-in-from-top-2">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="text-sm font-medium text-slate-300 mb-3 block">File Naming</label>
+                                        <div className="flex gap-4">
+                                            <label className="flex items-center gap-2 cursor-pointer group">
+                                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${namingMode === 'title' ? 'border-blue-500' : 'border-slate-500 group-hover:border-slate-400'}`}>
+                                                    {namingMode === 'title' && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+                                                </div>
+                                                <input
+                                                    type="radio"
+                                                    name="namingMode"
+                                                    value="title"
+                                                    checked={namingMode === 'title'}
+                                                    onChange={() => {
+                                                        setNamingMode('title');
+                                                        if (initialTitle) setFileName(initialTitle.endsWith('.mp4') ? initialTitle : `${initialTitle}.mp4`);
+                                                    }}
+                                                    className="hidden"
+                                                />
+                                                <span className={`text-sm ${namingMode === 'title' ? 'text-white' : 'text-slate-400 group-hover:text-slate-300'}`}>Webpage Title</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 cursor-pointer group">
+                                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${namingMode === 'resource' ? 'border-blue-500' : 'border-slate-500 group-hover:border-slate-400'}`}>
+                                                    {namingMode === 'resource' && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+                                                </div>
+                                                <input
+                                                    type="radio"
+                                                    name="namingMode"
+                                                    value="resource"
+                                                    checked={namingMode === 'resource'}
+                                                    onChange={() => {
+                                                        setNamingMode('resource');
+                                                        const name = initialResourceName || "video.mp4";
+                                                        setFileName(name);
+                                                    }}
+                                                    className="hidden"
+                                                />
+                                                <span className={`text-sm ${namingMode === 'resource' ? 'text-white' : 'text-slate-400 group-hover:text-slate-300'}`}>Resource Filename</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {/* Additional settings placeholders to match UI implications */}
+                                    <div>
+                                        {/* Can add more settings here like 'Auto Save', 'Clear Cache' if needed later */}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -298,6 +374,9 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
                                     )}
                                 </div>
                             </div>
+                            <h3 className="text-md font-semibold mb-4 flex items-center gap-2">
+                                {fileName}
+                            </h3>
                         </div>
                     )}
                 </div>

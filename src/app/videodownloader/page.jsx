@@ -2,11 +2,11 @@ import VideoEditorLoader from "@/components/VideoEditorLoader";
 import Navbar from "@/components/Navbar";
 
 export const metadata = {
-    title: "Editor",
-    description: "Trimming and editing videos in the browser",
+    title: "Video Downloader",
+    description: "Download and edit videos directly from your browser",
 };
 
-export default async function EditorPage({ searchParams }) {
+export default async function VideoDownloaderPage({ searchParams }) {
     const resolvedParams = await searchParams;
     const { video: videoUrl, type, title, referer } = resolvedParams;
 

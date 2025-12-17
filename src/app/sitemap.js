@@ -9,7 +9,7 @@ export default function sitemap() {
             priority: 1,
         },
         {
-            url: `${baseUrl}/editor`,
+            url: `${baseUrl}/videodownloader`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.8,

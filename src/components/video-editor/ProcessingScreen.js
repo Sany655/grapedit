@@ -11,7 +11,8 @@ export function ProcessingScreen({
     downloadSpeed,
     downloadProgress,
     onTogglePause,
-    onCancel
+    onCancel,
+    fileName
 }) {
     if (!isProcessing) return null;
 
@@ -25,6 +26,11 @@ export function ProcessingScreen({
                         <p className="text-slate-400 text-sm">
                             {isPaused ? "Paused..." : processingText}
                         </p>
+                        {fileName && (
+                            <p className="text-blue-300 text-xs mt-1 bg-slate-700/50 px-2 py-1 rounded inline-block border border-slate-600/50 max-w-[200px] md:max-w-xs truncate" title={fileName}>
+                                {fileName}
+                            </p>
+                        )}
                     </div>
                 </div>
 

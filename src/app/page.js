@@ -35,7 +35,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
             <Link
-              href="/editor"
+              href="/videodownloader"
               className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold text-lg hover:shadow-lg hover:shadow-blue-500/20 transition-all flex items-center justify-center gap-2 group"
             >
               Start Editing for Free
