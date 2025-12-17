@@ -16,42 +16,35 @@ export default function VideoEditorLoader({ videoUrl = "", type = "", initialTit
     });
 
     useEffect(() => {
-        const channel = new BroadcastChannel("grapedit-temporary-channel");
-
         const handleMessage = (event) => {
             try {
-                // The extension sends data as a JSON string or object
-                const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+                // Check if message is from our extension content script
+                if (event.data && event.data.type === 'GRAPEDIT_DATA' && event.data.payload) {
+                    const data = JSON.parse(event.data.payload);
 
-                if (data && data.url) {
-                    console.log("Received video from extension:", data);
-                    setEditorProps({
-                        initialVideo: data.url,
-                        initialType: data.type || (data.url.includes('.m3u8') ? 'hls' : 'mp4'),
-                        initialTitle: data.title || "Imported Video",
-                        initialReferer: data.url, // Using url as referer if not provided
-                        initialResourceName: data.name || ""
-                        // Note: Extension payload structure might vary, adjusting as needed
-                    });
+                    if (data && data.url) {
+                        console.log("Received video from extension:", data);
+                        setEditorProps({
+                            initialVideo: data.url,
+                            initialType: data.type || (data.url.includes('.m3u8') ? 'hls' : 'mp4'),
+                            initialTitle: data.title || "Imported Video",
+                            initialReferer: data.url,
+                            initialResourceName: data.name || ""
+                        });
+                    }
                 }
             } catch (error) {
                 console.error("Error processing extension message:", error);
             }
         };
 
-        const handleStorage = () => {
-            // Fallback: Check local storage if the extension uses that mechanism concurrently
-            // Based on analysis, the extension uses BroadcastChannel for immediate handover
-        };
-
-        channel.addEventListener("message", handleMessage);
+        window.addEventListener("message", handleMessage);
 
         // Notify extension that we are ready to receive data
-        channel.postMessage("GRAPEDIT_READY");
+        window.postMessage("GRAPEDIT_READY", "*");
 
         return () => {
-            channel.removeEventListener("message", handleMessage);
-            channel.close();
+            window.removeEventListener("message", handleMessage);
         };
     }, []);
 
