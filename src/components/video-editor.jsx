@@ -12,7 +12,7 @@ import { ProcessingScreen } from "./video-editor/ProcessingScreen";
 export default function VideoEditor({ initialVideo, initialType, initialTitle, initialReferer, initialResourceName }) {
     const {
         downloadProgress, downloadedBytes, totalBytesEst, downloadSpeed, isPaused, processingText, isProcessing,
-        downloadStarted, videoFile, videoUrl, fileName, loaded, ffmpegRef, currentDownloadId,
+        downloadStarted, videoFile, videoUrl, fileName, loaded, ffmpegRef, currentDownloadId, resolutions, selectedResolution, setSelectedResolution,
         setVideoFile, setVideoUrl, setFileName, startDownloadProcess, togglePause, cancelDownload, formatSize
     } = useVideoDownload(initialVideo, initialType, initialTitle, initialReferer);
 
@@ -292,6 +292,25 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
                                             </label>
                                         </div>
                                     </div>
+                                    {resolutions && resolutions.length > 0 && (
+                                        <div>
+                                            <label className="text-sm font-medium text-slate-300 mb-3 block">Resolution</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {resolutions.map((res, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => setSelectedResolution(res)}
+                                                        className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${selectedResolution?.url === res.url
+                                                            ? 'bg-blue-600 border-blue-500 text-white'
+                                                            : 'bg-slate-700 border-slate-600 text-slate-300 hover:border-slate-500'
+                                                            }`}
+                                                    >
+                                                        {res.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                     {/* Additional settings placeholders to match UI implications */}
                                     <div>
                                         {/* Can add more settings here like 'Auto Save', 'Clear Cache' if needed later */}

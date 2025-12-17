@@ -18,6 +18,65 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
     const [fileName, setFileName] = useState(initialTitle ? `${initialTitle}.mp4` : "source-video.mp4");
     const [loaded, setLoaded] = useState(false);
     const [currentDownloadId, setCurrentDownloadId] = useState(null);
+    const [resolutions, setResolutions] = useState([]);
+    const [selectedResolution, setSelectedResolution] = useState(null);
+
+    useEffect(() => {
+        const checkResolutions = async () => {
+            if (!initialVideo) return;
+            setResolutions([]);
+            setSelectedResolution(null);
+
+            if (initialVideo.includes('.m3u8') || initialType === 'application/x-mpegURL') {
+                try {
+                    const fetchProxy = (url) => `/api/proxy?url=${encodeURIComponent(url)}&referer=${encodeURIComponent(initialReferer || "")}`;
+                    const response = await fetch(fetchProxy(initialVideo));
+                    if (!response.ok) return;
+                    const text = await response.text();
+
+                    const lines = text.split('\n');
+                    const foundResolutions = [];
+
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (line.startsWith('#EXT-X-STREAM-INF')) {
+                            let label = "Unknown";
+                            const resMatch = line.match(/RESOLUTION=(\d+x\d+)/);
+                            if (resMatch) label = resMatch[1];
+                            else {
+                                const bandMatch = line.match(/BANDWIDTH=(\d+)/);
+                                if (bandMatch) label = `${Math.round(bandMatch[1] / 1000)}kbps`;
+                            }
+
+                            let urlLine = "";
+                            for (let j = i + 1; j < lines.length; j++) {
+                                if (lines[j].trim() && !lines[j].startsWith('#')) {
+                                    urlLine = lines[j].trim();
+                                    i = j;
+                                    break;
+                                }
+                            }
+
+                            if (urlLine) {
+                                let finalUrl = urlLine;
+                                if (!urlLine.startsWith('http')) {
+                                    const baseUrl = initialVideo.substring(0, initialVideo.lastIndexOf('/') + 1);
+                                    finalUrl = baseUrl + urlLine;
+                                }
+                                foundResolutions.push({ label, url: finalUrl });
+                            }
+                        }
+                    }
+
+                    if (foundResolutions.length > 0) {
+                        setResolutions(foundResolutions);
+                        setSelectedResolution(foundResolutions[0]);
+                    }
+                } catch (e) { console.error("Error checking resolutions", e); }
+            }
+        };
+        checkResolutions();
+    }, [initialVideo, initialType, initialReferer]);
 
     const pauseRef = useRef(false);
     const cancelRef = useRef(false);
@@ -74,7 +133,7 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
 
     const startDownloadProcess = async (overrideUrl = null) => {
         // Ensure overrideUrl is a string (it might be an event object from onClick)
-        const targetVideo = (typeof overrideUrl === 'string' ? overrideUrl : null) || initialVideo;
+        const targetVideo = (typeof overrideUrl === 'string' ? overrideUrl : null) || (selectedResolution ? selectedResolution.url : initialVideo);
 
         setDownloadStarted(true);
         if (targetVideo) {
@@ -133,22 +192,56 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                     }
                     const manifestText = await response.text();
 
-                    const baseUrl = targetVideo.substring(0, targetVideo.lastIndexOf('/') + 1);
-                    const lines = manifestText.split('\n');
-                    const segments = [];
+                    let currentManifestText = manifestText;
+                    let currentManifestUrl = targetVideo;
+                    let segments = [];
+                    let loopCount = 0;
 
-                    for (let line of lines) {
-                        line = line.trim();
-                        if (line && !line.startsWith('#')) {
-                            let finalUrl = line;
-                            if (!line.startsWith('http')) {
-                                finalUrl = baseUrl + line;
+                    while (loopCount < 5) { // Prevent infinite loops
+                        loopCount++;
+                        const baseUrl = currentManifestUrl.substring(0, currentManifestUrl.lastIndexOf('/') + 1);
+                        const lines = currentManifestText.split('\n');
+                        const playlists = [];
+                        const localSegments = [];
+
+                        for (let line of lines) {
+                            line = line.trim();
+                            if (line && !line.startsWith('#')) {
+                                let finalUrl = line;
+                                if (!line.startsWith('http')) {
+                                    finalUrl = baseUrl + line;
+                                }
+
+                                if (line.toLowerCase().includes('.m3u8')) {
+                                    playlists.push(finalUrl);
+                                } else {
+                                    localSegments.push(finalUrl);
+                                }
                             }
-                            segments.push(finalUrl);
+                        }
+
+                        if (playlists.length > 0) {
+                            console.log("Master playlist detected, switching to variant:", playlists[playlists.length - 1]);
+                            setProcessingText("Resolving quality stream...");
+                            currentManifestUrl = playlists[playlists.length - 1]; // Pick last (often best quality in simple lists)
+                            const resp = await fetch(fetchProxy(currentManifestUrl), { signal });
+                            if (!resp.ok) throw new Error("Failed to fetch variant playlist");
+                            currentManifestText = await resp.text();
+                            continue;
+                        } else if (localSegments.length > 0) {
+                            segments = localSegments;
+                            break;
+                        } else {
+                            throw new Error("No segments or playlists found in m3u8");
                         }
                     }
 
-                    if (segments.length === 0) throw new Error("No segments found in m3u8");
+                    // Placeholder to satisfy the tool, not making changes here as analysis says previous step is sufficient.
+                    // Actually, I should just verify the previous step logic was applied correctly.
+                    // I will just perform a no-op or proceed.
+                    // Wait, I *am* calling `replace_file_content` in this step. I haven't called it yet. This IS the tool call.
+                    // The previous thought block was me verifying the *planned* tool call.
+                    // So I will proceed with the replacement as designed.
 
                     const segmentBuffers = [];
                     let completed = 0;
@@ -371,7 +464,7 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
 
     return {
         downloadProgress, downloadedBytes, totalBytesEst, downloadSpeed, isPaused, processingText, isProcessing,
-        downloadStarted, videoFile, videoUrl, fileName, loaded, ffmpegRef, currentDownloadId,
+        downloadStarted, videoFile, videoUrl, fileName, loaded, ffmpegRef, currentDownloadId, resolutions, selectedResolution, setSelectedResolution,
         setVideoFile, setVideoUrl, setFileName, startDownloadProcess, togglePause, cancelDownload, formatSize
     };
 }
