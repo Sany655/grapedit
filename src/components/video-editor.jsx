@@ -3,8 +3,9 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { fetchFile } from "@ffmpeg/util";
-import { Upload, Scissors, Download, Loader2, Play, History, Trash2, Undo, Settings, Edit2 } from "lucide-react";
+import { Upload, Scissors, Download, Loader2, Play, History, Trash2, Undo, Settings, Edit2, Save } from "lucide-react";
 import DownloadManager from "./DownloadManager";
+import { saveDownload } from "../utils/db";
 import { useVideoDownload } from "./video-editor/useVideoDownload";
 import { useSegmentEditor } from "./video-editor/useSegmentEditor";
 import { ProcessingScreen } from "./video-editor/ProcessingScreen";
@@ -101,7 +102,7 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
         }
     };
 
-    const trimVideo = async () => {
+    const trimVideo = async (destinations = ['disk']) => {
         if (!loaded) return;
         if (!videoFile && (initialVideo?.includes('.m3u8') || initialType === 'application/x-mpegURL')) {
             alert("Please wait for the video to finish downloading before editing.");
@@ -155,14 +156,39 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
             ]);
 
             const data = await ffmpeg.readFile("output.mp4");
-            const url = URL.createObjectURL(new Blob([data.buffer], { type: "video/mp4" }));
+            const mp4Blob = new Blob([data.buffer], { type: "video/mp4" });
+            const url = URL.createObjectURL(mp4Blob);
 
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `edited-${fileName || "video.mp4"}`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            if (destinations.includes('disk')) {
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `edited-${fileName || "video.mp4"}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+
+            if (destinations.includes('db')) {
+                try {
+                    const downloadId = crypto.randomUUID();
+                    await saveDownload({
+                        id: downloadId,
+                        url: videoUrl && !videoUrl.startsWith('blob:') ? videoUrl : "edited-local",
+                        fileName: `edited-${fileName || "video.mp4"}`,
+                        status: 'completed',
+                        progress: 100,
+                        blob: mp4Blob,
+                        createdAt: new Date().toISOString()
+                    });
+                    // Optional: Notify user
+                    // alert("Saved to Bin!"); 
+                    // Better validation: open the manager?
+                    setIsManagerOpen(true);
+                } catch (e) {
+                    console.error("Failed to save to bin", e);
+                    alert("Failed to save to bin: " + e.message);
+                }
+            }
 
             // Clean up
             await ffmpeg.deleteFile(inputName);
@@ -467,17 +493,32 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
                                 </button>
                             </div>
 
-                            <button
-                                onClick={trimVideo}
-                                disabled={!loaded || isProcessing || isExporting || segments.length === 0}
-                                className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-500 hover:to-green-500 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-900/20"
-                            >
-                                {isProcessing || isExporting ? (
-                                    <><Loader2 className="animate-spin" /> Processing...</>
-                                ) : (
-                                    <><Download size={18} /> Export Merged Video</>
-                                )}
-                            </button>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => trimVideo(['db'])}
+                                    disabled={!loaded || isProcessing || isExporting || segments.length === 0}
+                                    className="py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-slate-600"
+                                >
+                                    {isProcessing || isExporting ? (
+                                        <Loader2 className="animate-spin" size={18} />
+                                    ) : (
+                                        <Save size={18} />
+                                    )}
+                                    <span className="hidden sm:inline">Save to Bin</span>
+                                </button>
+                                <button
+                                    onClick={() => trimVideo(['disk'])}
+                                    disabled={!loaded || isProcessing || isExporting || segments.length === 0}
+                                    className="py-3 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-500 hover:to-green-500 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-900/20"
+                                >
+                                    {isProcessing || isExporting ? (
+                                        <Loader2 className="animate-spin" size={18} />
+                                    ) : (
+                                        <Download size={18} />
+                                    )}
+                                    <span className="hidden sm:inline">Export to Disk</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

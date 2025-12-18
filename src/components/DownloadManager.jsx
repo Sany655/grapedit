@@ -97,7 +97,7 @@ export default function DownloadManager({
                         <div
                             key={item.id}
                             className={`bg-slate-800 rounded-lg p-3 border border-slate-700 group relative transition-all ${item.status === 'completed'
-                                ? 'hover:border-blue-500 cursor-pointer hover:bg-slate-750'
+                                ? 'hover:border-blue-500 cursor-pointer hover:bg-slate-700'
                                 : 'border-slate-700'
                                 }`}
                             onClick={() => item.status === 'completed' && onLoadVideo(item)}
@@ -156,7 +156,7 @@ export default function DownloadManager({
 
                                     <button
                                         onClick={(e) => handleDelete(item.id, e)}
-                                        className="text-slate-500 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="text-slate-500 hover:text-red-400 p-1 transition-colors"
                                         title="Delete"
                                     >
                                         <Trash2 size={16} />
