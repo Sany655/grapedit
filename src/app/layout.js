@@ -15,10 +15,10 @@ export const metadata = {
   metadataBase: new URL("https://projects.vercel.app/projects.vercel.app"),
   title: {
     default: "Grapedit - Advanced Video Editor",
-    template: "%s | Grapedit",
+    template: "%s | Free Online Video Editor",
   },
-  description: "Download, trim, and edit videos directly in your browser. Supports HLS, m3u8, and protected streams with local privacy.",
-  keywords: ["video editor", "browser video editor", "trim video", "merge video", "HLS stream", "m3u8 downloader", "ffmpeg wasm", "local video editing"],
+  description: "Free online video editor. Merge clips, trim video. No upload required - 100% private & fast.",
+  keywords: ["online video editor", "merge video online", "trim video", "browser video editor", "video cutter"],
   authors: [{ name: "Grapedit Team" }],
   creator: "Grapedit",
   publisher: "Grapedit",

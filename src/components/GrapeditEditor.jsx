@@ -415,7 +415,7 @@ export default function GrapeditEditor() {
     };
 
     return (
-        <div className="max-w-6xl mx-auto p-6 bg-slate-900 text-slate-100 min-h-screen font-sans">
+        <div className="p-3 md:p-6 text-slate-100 font-sans h-full">
             <DownloadManager
                 isOpen={isManagerOpen}
                 onClose={() => setIsManagerOpen(false)}
@@ -426,20 +426,14 @@ export default function GrapeditEditor() {
                 }}
             />
 
-            <header className="mb-8 flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Studio Editor</h1>
-                    <p className="text-slate-400 text-sm">Multi-clip non-linear editor</p>
+            <div className="flex items-center justify-end mb-4">
+                <div className="flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full ${loaded ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                    <span className="text-sm text-slate-400">{loaded ? 'Engine Ready' : 'Loading Engine...'}</span>
                 </div>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <span className={`h-2 w-2 rounded-full ${loaded ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                        <span className="text-sm text-slate-400">{loaded ? 'Engine Ready' : 'Loading Engine...'}</span>
-                    </div>
-                </div>
-            </header>
+            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
                 {/* Left Col: Player & Bin */}
                 <div className="space-y-6">
                     <div className="bg-black rounded-xl overflow-hidden shadow-2xl aspect-video relative border border-slate-800">
@@ -582,10 +576,10 @@ export default function GrapeditEditor() {
                             <span className="text-xs text-slate-500">.mp4</span>
                         </div>
 
-                        <div className="flex gap-2">
-                            <button onClick={() => handleSplit(currentTime)} disabled={!activeSegmentId} className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded text-sm disabled:opacity-50"><Scissors size={16} className="inline mr-1" /> Split</button>
-                            <button onClick={handleDeleteSegment} disabled={!activeSegmentId} className="flex-1 py-2 bg-slate-700 hover:bg-red-900/50 text-red-200 rounded text-sm disabled:opacity-50"><Trash2 size={16} className="inline mr-1" /> Delete</button>
-                            <button onClick={handleUndo} disabled={historyIndex <= 0} className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded disabled:opacity-50"><Undo size={16} /></button>
+                        <div className="grid grid-cols-3 gap-2">
+                            <button onClick={() => handleSplit(currentTime)} disabled={!activeSegmentId} className="py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs sm:text-sm disabled:opacity-50 flex items-center justify-center"><Scissors size={14} className="sm:mr-1" /><span className="hidden sm:inline">Split</span></button>
+                            <button onClick={handleDeleteSegment} disabled={!activeSegmentId} className="py-2 bg-slate-700 hover:bg-red-900/50 text-red-200 rounded text-xs sm:text-sm disabled:opacity-50 flex items-center justify-center"><Trash2 size={14} className="sm:mr-1" /><span className="hidden sm:inline">Delete</span></button>
+                            <button onClick={handleUndo} disabled={historyIndex <= 0} className="py-2 bg-slate-700 hover:bg-slate-600 rounded disabled:opacity-50 flex items-center justify-center"><Undo size={14} /></button>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-700">
