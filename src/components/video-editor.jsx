@@ -19,7 +19,7 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
 
     const {
         segments, activeSegmentId, historyIndex, duration,
-        setActiveSegmentId, initSegments, handleSplit, handleDeleteSegment, handleUndo
+        setActiveSegmentId, initSegments, handleSplit, handleDeleteSegment, handleUndo, resetSegments
     } = useSegmentEditor();
 
     const [currentTime, setCurrentTime] = useState(0);
@@ -39,6 +39,7 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            resetSegments();
             setVideoFile(file);
             setVideoUrl(URL.createObjectURL(file));
             setFileName(file.name);
@@ -52,6 +53,7 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
                 console.log("Received video data from extension", mimeType);
                 if (buffer) {
                     const blob = new Blob([buffer], { type: mimeType || 'video/mp4' });
+                    resetSegments();
                     setVideoFile(blob);
                     setVideoUrl(URL.createObjectURL(blob));
                     if (event.data.fileName) {
@@ -404,7 +406,7 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
                             />
                             <div className="flex justify-between text-sm text-slate-400">
                                 <div className="flex justify-between items-center w-full">
-                                    <button onClick={() => { setVideoUrl(""); setVideoFile(null); }} className="text-red-400 hover:text-red-300">
+                                    <button onClick={() => { setVideoUrl(""); setVideoFile(null); resetSegments(); }} className="text-red-400 hover:text-red-300">
                                         Remove
                                     </button>
 

@@ -67,8 +67,16 @@ export function useSegmentEditor(initialDuration = 0) {
         addToHistory(newSegments, null);
     };
 
+    const resetSegments = () => {
+        setSegments([]);
+        setActiveSegmentId(null);
+        setHistory([]);
+        setHistoryIndex(-1);
+        setDuration(0);
+    };
+
     return {
         segments, activeSegmentId, historyIndex, duration,
-        setSegments, setActiveSegmentId, initSegments, handleSplit, handleDeleteSegment, handleUndo
+        setSegments, setActiveSegmentId, initSegments, handleSplit, handleDeleteSegment, handleUndo, resetSegments
     };
 }
