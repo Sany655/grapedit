@@ -1,6 +1,7 @@
+"use client";
 
 import Link from "next/link";
-import { ArrowRight, Scissors } from "lucide-react";
+import { ArrowRight, Scissors, History } from "lucide-react";
 
 export default function Navbar() {
     return (
@@ -14,12 +15,17 @@ export default function Navbar() {
                         Grapedit
                     </span>
                 </Link>
-                <div className="flex items-center gap-6">
-                    <a href="#" className="text-slate-400 hover:text-white transition-colors text-sm font-medium">
-                        Documentation
-                    </a>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => window.dispatchEvent(new Event('open-grapedit-bin'))}
+                        className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-colors flex items-center gap-2 text-sm"
+                        title="History"
+                    >
+                        <History size={20} />
+                        <span className="hidden sm:inline">History</span>
+                    </button>
                     <Link
-                        href="/videodownloader"
+                        href="/editor"
                         className="px-4 py-2 bg-white text-slate-900 rounded-full font-semibold text-sm hover:bg-slate-200 transition-colors flex items-center gap-2"
                     >
                         Open Editor <ArrowRight size={16} />

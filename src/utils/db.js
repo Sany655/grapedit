@@ -134,3 +134,17 @@ export const getDownloadBlob = async (id) => {
         request.onerror = (e) => reject(e);
     });
 }
+
+export const getDownloadById = async (id) => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], "readonly");
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.get(id);
+
+        request.onsuccess = () => {
+            resolve(request.result || null);
+        };
+        request.onerror = (e) => reject("Error fetching download by ID: " + e.target.error);
+    });
+};

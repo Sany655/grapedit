@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Download, FileVideo, Trash2, RefreshCw, X, Play, Pause, AlertCircle } from "lucide-react";
+import { Download, FileVideo, Trash2, RefreshCw, X, Play, Pause, AlertCircle, Monitor, Clock, HardDrive, Calendar } from "lucide-react";
 import { getDownloads, deleteDownload } from "../utils/db";
 
 export default function DownloadManager({
@@ -32,6 +32,59 @@ export default function DownloadManager({
             setLoading(false);
         }
     };
+
+
+
+    // Backfill metadata for legacy/failed items (Self-Healing)
+    useEffect(() => {
+        const backfillMetadata = async () => {
+            if (!downloads.length) return;
+
+            for (const item of downloads) {
+                // If incomplete metadata but we have the blob
+                if (item.status === 'completed' && item.blob && (!item.width || !item.duration)) {
+                    try {
+                        console.log("Backfilling metadata for:", item.fileName);
+                        const video = document.createElement('video');
+                        video.preload = 'metadata';
+                        video.muted = true;
+                        video.playsInline = true;
+                        const url = URL.createObjectURL(item.blob);
+                        video.src = url;
+
+                        await new Promise((resolve) => {
+                            video.onloadedmetadata = () => {
+                                const metadata = {
+                                    duration: isFinite(video.duration) ? video.duration : 0,
+                                    width: video.videoWidth,
+                                    height: video.videoHeight
+                                };
+
+                                // Update DB
+                                import("../utils/db").then(({ saveDownload }) => {
+                                    saveDownload({
+                                        ...item,
+                                        ...metadata
+                                    }).then(() => {
+                                        // Update local state to reflect change immediately
+                                        setDownloads(prev => prev.map(p => p.id === item.id ? { ...p, ...metadata } : p));
+                                    });
+                                });
+                                resolve();
+                            };
+                            video.onerror = resolve;
+                            setTimeout(resolve, 2000);
+                        });
+                        URL.revokeObjectURL(url);
+                    } catch (e) {
+                        console.error("Backfill failed", e);
+                    }
+                }
+            }
+        };
+        // Run once when downloads change (loaded)
+        backfillMetadata();
+    }, [downloads.length]); // Dep on length so it runs after load
 
     useEffect(() => {
         let isMounted = true;
@@ -107,11 +160,49 @@ export default function DownloadManager({
                                     <h4 className="text-sm font-medium text-white truncate" title={item.fileName}>
                                         {item.fileName || "Untitled Video"}
                                     </h4>
-                                    <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
-                                        {item.status === 'completed' && <span className="text-green-400">Completed</span>}
-                                        {item.status === 'downloading' && <span className="text-blue-400">Downloading...</span>}
-                                        {item.status === 'error' && <span className="text-red-400">Error</span>}
-                                    </p>
+                                    <div className="text-xs text-slate-400 mt-2 space-y-1">
+                                        {item.status === 'completed' && (
+                                            <div className="flex flex-wrap gap-3 items-center opacity-80 mt-2">
+                                                {/* Resolution */}
+                                                {item.width ? (
+                                                    <span className="flex items-center gap-1.5 bg-slate-700/50 px-2 py-1 rounded text-[10px] text-slate-200" title="Resolution">
+                                                        <Monitor size={10} className="text-blue-400" />
+                                                        {item.width}x{item.height}
+                                                    </span>
+                                                ) : <span className="text-[10px]">--</span>}
+
+                                                {/* Duration */}
+                                                {item.duration ? (
+                                                    <span className="flex items-center gap-1 text-[10px]" title="Duration">
+                                                        <Clock size={10} className="text-slate-500" />
+                                                        {(() => {
+                                                            const seconds = Math.round(item.duration);
+                                                            const h = Math.floor(seconds / 3600);
+                                                            const m = Math.floor((seconds % 3600) / 60);
+                                                            const s = seconds % 60;
+                                                            return h > 0
+                                                                ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+                                                                : `${m}:${s.toString().padStart(2, '0')}`;
+                                                        })()}
+                                                    </span>
+                                                ) : null}
+
+                                                {/* Size */}
+                                                <span className="flex items-center gap-1 text-[10px]" title="File Size">
+                                                    <HardDrive size={10} className="text-slate-500" />
+                                                    {item.blob ? (item.blob.size / (1024 * 1024)).toFixed(1) + ' MB' : '-- MB'}
+                                                </span>
+
+                                                {/* Date */}
+                                                <span className="flex items-center gap-1 text-[10px] text-slate-500 ml-auto" title="Downloaded At">
+                                                    <Calendar size={10} />
+                                                    {new Date(item.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {item.status === 'downloading' && <span className="text-blue-400 font-medium text-[10px]">Downloading...</span>}
+                                        {item.status === 'error' && <span className="text-red-400 font-medium text-[10px]">Error</span>}
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     {/* Active Download Controls */}

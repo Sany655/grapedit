@@ -12,6 +12,7 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
     const [isPaused, setIsPaused] = useState(false);
     const [processingText, setProcessingText] = useState("Processing...");
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isFFmpegBusy, setIsFFmpegBusy] = useState(false);
     const [downloadStarted, setDownloadStarted] = useState(false);
     const [videoFile, setVideoFile] = useState(null);
     const [videoUrl, setVideoUrl] = useState(initialVideo || "");
@@ -139,6 +140,7 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
         if (targetVideo) {
             if (targetVideo.includes('.m3u8') || initialType === 'application/x-mpegURL') {
                 setIsProcessing(true);
+                setIsFFmpegBusy(true); // Flag FFmpeg as busy
                 setProcessingText("Downloading and converting segments...");
                 setDownloadProgress(0);
                 setDownloadedBytes(0);
@@ -235,13 +237,6 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                             throw new Error("No segments or playlists found in m3u8");
                         }
                     }
-
-                    // Placeholder to satisfy the tool, not making changes here as analysis says previous step is sufficient.
-                    // Actually, I should just verify the previous step logic was applied correctly.
-                    // I will just perform a no-op or proceed.
-                    // Wait, I *am* calling `replace_file_content` in this step. I haven't called it yet. This IS the tool call.
-                    // The previous thought block was me verifying the *planned* tool call.
-                    // So I will proceed with the replacement as designed.
 
                     const segmentBuffers = [];
                     let completed = 0;
@@ -347,6 +342,7 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                 } finally {
                     if (abortControllerRef.current === controller) {
                         setIsProcessing(false);
+                        setIsFFmpegBusy(false); // Flag FFmpeg as NOT busy
                         setDownloadProgress(0);
                         setDownloadedBytes(0);
                         setTotalBytesEst(0);
@@ -463,7 +459,7 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
     };
 
     return {
-        downloadProgress, downloadedBytes, totalBytesEst, downloadSpeed, isPaused, processingText, isProcessing,
+        downloadProgress, downloadedBytes, totalBytesEst, downloadSpeed, isPaused, processingText, isProcessing, isFFmpegBusy,
         downloadStarted, videoFile, videoUrl, fileName, loaded, ffmpegRef, currentDownloadId, resolutions, selectedResolution, setSelectedResolution,
         setVideoFile, setVideoUrl, setFileName, startDownloadProcess, togglePause, cancelDownload, formatSize
     };
