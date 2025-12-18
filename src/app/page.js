@@ -1,67 +1,78 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
+import { Suspense } from "react";
 import GrapeditEditor from "@/components/GrapeditEditor";
-import { Scissors, Layers, Zap, Lock, Wand2, Download, Share2, Upload } from "lucide-react";
+import { Scissors, Layers, Zap, Lock, Wand2, Download, Share2, Upload, Loader2 } from "lucide-react";
 
 export default function Home() {
+  const scrollToHowItWorks = () => {
+    const element = document.getElementById("how-it-works");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-slate-200 font-sans selection:bg-purple-500/30 overflow-x-hidden">
+    <main className="min-h-screen bg-slate-950 overflow-x-hidden">
       <Navbar />
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6 relative overflow-hidden z-10">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
-        <div className="absolute top-20 right-0 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
-
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium animate-in fade-in slide-in-from-bottom-4">
+      <div className="relative pt-32 pb-20 sm:pt-40 sm:pb-24 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-950 to-slate-950" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-6 animate-fade-in-up">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
             </span>
-            New: Client-Side Processing
+            New Generation Video Editor
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight animate-in fade-in slide-in-from-bottom-8 duration-700">
-            Professional Video Editing,<br />
-            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Directly in Browser
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-8 animate-fade-in-up delay-100">
+            Edit Videos with <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+              Professional Precision
             </span>
           </h1>
 
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-100">
-            Trim, merge, and edit videos securely. No uploads, no software installation, 100% private.
+          <p className="max-w-2xl mx-auto text-lg sm:text-xl text-slate-400 mb-10 animate-fade-in-up delay-200">
+            Powerful, browser-based video editing.
+            Split, merge, and export your videos instantly.
+            No registration required.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up delay-300">
             <button
-              onClick={() => document.getElementById('editor').scrollIntoView({ behavior: 'smooth' })}
-              className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold text-lg hover:shadow-lg hover:shadow-blue-500/20 transition-all flex items-center gap-2"
+              onClick={() => document.getElementById('editor-section').scrollIntoView({ behavior: 'smooth' })}
+              className="inline-flex items-center justify-center px-8 py-3 text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-full transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
             >
-              Start Editing Now <Scissors size={20} />
+              Start Editing Now
             </button>
-            <button className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-semibold text-lg border border-slate-700 transition-all" onClick={() => document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' })}>
+            <button
+              onClick={scrollToHowItWorks}
+              className="inline-flex items-center justify-center px-8 py-3 text-base font-medium text-slate-300 bg-slate-800/50 hover:bg-slate-800 hover:text-white rounded-full border border-slate-700 transition-all duration-200"
+            >
               How It Works
             </button>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Main Editor Section */}
-      <section id="editor" className="py-12 px-4 md:px-6 relative z-10 scroll-mt-20">
+      {/* Editor Section */}
+      <div id="editor-section" className="relative z-10 -mt-10 sm:-mt-20 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1400px] mx-auto">
-          {/* Premium Glass Container for Editor */}
-          <div className="relative group animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
-            {/* Glow Effect */}
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-100 transition duration-1000"></div>
-
-            <div className="relative bg-[#0F1115]/90 backdrop-blur-xl border border-slate-800/50 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/5">
+          <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-slate-800/50 shadow-2xl overflow-hidden ring-1 ring-white/10">
+            <Suspense fallback={
+              <div className="flex items-center justify-center min-h-[50vh]">
+                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+              </div>
+            }>
               <GrapeditEditor />
-            </div>
+            </Suspense>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* SEO & Features Content Section */}
       <section className="py-20 px-6 bg-[#0F1115] border-t border-slate-800">
@@ -153,7 +164,7 @@ export default function Home() {
       <footer className="py-8 bg-[#0A0A0B] border-t border-slate-800/50 text-center text-slate-600 text-sm">
         <p>&copy; 2025 Grapedit. The secure, client-side video editing solution.</p>
       </footer>
-    </div>
+    </main>
   );
 }
 
