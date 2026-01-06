@@ -30,6 +30,7 @@ export default function GrapeditEditor() {
     const [resolutionMismatch, setResolutionMismatch] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
     const [exportDestinations, setExportDestinations] = useState([]);
+    const [mergeItems, setMergeItems] = useState([]);
 
     // Refs
     const videoRef = useRef(null);
@@ -459,6 +460,98 @@ export default function GrapeditEditor() {
         return outputName;
     };
 
+    const quickMerge = async (items, mode) => {
+        if (!items || items.length === 0) return;
+
+        if (!loaded) {
+            toast.error("Engine loading...");
+            return;
+        }
+
+        const ffmpeg = ffmpegRef.current;
+        setIsExporting(true);
+        setShowExportModal(false);
+
+        const toastId = toast.loading("Merging videos...");
+
+        try {
+            // 1. Write files to FS & Normalize
+            const fileMap = {};
+            // We use the selected mode (fast/fit/fill/blur) from modal
+
+            for (const item of items) {
+                const id = item.id;
+                const url = URL.createObjectURL(item.blob);
+
+                if (mode === 'fast') {
+                    // Fast: write original
+                    const fname = `${id}.mp4`;
+                    await ffmpeg.writeFile(fname, await fetchFile(url));
+                    fileMap[id] = fname;
+                } else {
+                    // Normalize with selected mode
+                    const normName = await normalizeClip(url, id, mode);
+                    fileMap[id] = normName;
+                }
+                URL.revokeObjectURL(url);
+            }
+
+            // 2. Concat List
+            let concatList = '';
+            // Sort Oldest -> Newest
+            const sortedItems = [...items].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+            for (const item of sortedItems) {
+                const fname = fileMap[item.id];
+                concatList += `file '${fname}'\n`;
+            }
+
+            await ffmpeg.writeFile('concat_merge.txt', concatList);
+            await ffmpeg.exec(['-f', 'concat', '-safe', '0', '-i', 'concat_merge.txt', '-c', 'copy', 'output_merge.mp4']);
+
+            const data = await ffmpeg.readFile("output_merge.mp4");
+            const mp4Blob = new Blob([data.buffer], { type: "video/mp4" });
+            const url = URL.createObjectURL(mp4Blob);
+
+            // Download
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `merged-${items.length}-videos.mp4`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // Save to DB
+            await saveDownload({
+                id: crypto.randomUUID(),
+                url: "merged-local",
+                fileName: `merged-${items.length}-videos.mp4`,
+                status: 'completed',
+                progress: 100,
+                blob: mp4Blob,
+                createdAt: new Date().toISOString()
+            });
+
+            toast.success("Merge Complete!", { id: toastId });
+
+            // Cleanup
+            await ffmpeg.deleteFile('concat_merge.txt');
+            await ffmpeg.deleteFile("output_merge.mp4");
+            for (const fname of Object.values(fileMap)) {
+                try { await ffmpeg.deleteFile(fname); } catch (e) { }
+            }
+
+        } catch (e) {
+            console.error("Merge failed", e);
+            toast.error("Merge failed", { id: toastId });
+        } finally {
+            setIsExporting(false);
+            setMergeItems([]); // Clear merge state
+        }
+    };
+
+
+
     const trimVideo = async (mode) => {
         // mode: 'fast' | 'fit' | 'fill' | 'blur'
         const destinations = exportDestinations;
@@ -685,14 +778,108 @@ export default function GrapeditEditor() {
                     addNewClip(item.blob, url, item.fileName);
                     setIsManagerOpen(false);
                 }}
+                onLoadMultiple={async (items) => {
+                    if (!items || items.length === 0) return;
+
+                    const newClipsData = [];
+                    const newSegmentsData = [];
+
+                    for (const item of items) {
+                        // Check if file is already in library (by checking name or existing clips)
+                        // Note: checkFileExists checks against DB, but here we check against in-memory clips too?
+                        // checkFileExists(item.fileName) checks IndexedDB 'project files'.
+                        // But these items come FROM download DB. Maybe they are already there?
+                        // Let's just treat them as new imports to the editor.
+
+                        // Avoid double add if clip with same name exists in current session?
+                        if (clips.some(c => c.name === item.fileName)) {
+                            toast(`${item.fileName} already in project`, { icon: 'ℹ️' });
+                            continue;
+                        }
+
+                        const url = URL.createObjectURL(item.blob);
+                        const clipId = crypto.randomUUID();
+
+                        // Get metadata - we might already have it in 'item'
+                        // but creating a video element is safer to verify it works
+                        const tempVideo = document.createElement('video');
+                        tempVideo.src = url;
+
+                        await new Promise((resolve) => {
+                            tempVideo.onloadedmetadata = () => {
+                                const clipDuration = tempVideo.duration;
+                                newClipsData.push({
+                                    id: clipId,
+                                    file: item.blob,
+                                    url,
+                                    name: item.fileName,
+                                    duration: clipDuration,
+                                    width: tempVideo.videoWidth,
+                                    height: tempVideo.videoHeight
+                                });
+                                newSegmentsData.push({ id: clipId, duration: clipDuration });
+                                resolve();
+                            };
+                            tempVideo.onerror = resolve; // Skip failed
+                        });
+                    }
+
+                    if (newClipsData.length > 0) {
+                        // Resolution check logic
+                        let hasMismatch = false;
+                        if (clips.length > 0) {
+                            const first = clips[0];
+                            if (newClipsData.some(c => c.width !== first.width || c.height !== first.height)) {
+                                hasMismatch = true;
+                            }
+                        } else if (newClipsData.length > 1) {
+                            const first = newClipsData[0];
+                            hasMismatch = newClipsData.some(c => c.width !== first.width || c.height !== first.height);
+                        }
+
+                        if (hasMismatch) {
+                            toast.error(`Resolution mismatch. Export may fail.`, { duration: 5000, icon: '⚠️' });
+                            setResolutionMismatch(true);
+                        }
+
+                        setClips(prev => [...prev, ...newClipsData]);
+                        addClips(newSegmentsData);
+                        toast.success(`Added ${newClipsData.length} clips`);
+                    }
+
+                    setIsManagerOpen(false);
+                }}
+                onExport={(items) => {
+                    // Check resolution mismatch for passed items?
+                    // We can approx by checking 1st vs others
+                    if (items.length > 1) {
+                        const first = items[0];
+                        const hasMismatch = items.some(i => i.width !== first.width || i.height !== first.height);
+                        setResolutionMismatch(hasMismatch);
+                    } else {
+                        setResolutionMismatch(false);
+                    }
+                    setMergeItems(items);
+                    setShowExportModal(true);
+                    setIsManagerOpen(false);
+                }}
             />
 
             <ExportOptionsModal
                 isOpen={showExportModal}
-                onClose={() => setShowExportModal(false)}
-                onConfirm={trimVideo}
+                onClose={() => {
+                    setShowExportModal(false);
+                    setMergeItems([]); // Clear on cancel
+                }}
+                onConfirm={(mode) => {
+                    if (mergeItems.length > 0) {
+                        quickMerge(mergeItems, mode);
+                    } else {
+                        trimVideo(mode);
+                    }
+                }}
                 resolutionMismatch={resolutionMismatch}
-                totalDuration={duration}
+                totalDuration={mergeItems.length > 0 ? mergeItems.reduce((acc, i) => acc + (i.duration || 0), 0) : duration}
             />
 
             <div className="flex items-center justify-end mb-4">
