@@ -148,3 +148,19 @@ export const getDownloadById = async (id) => {
         request.onerror = (e) => reject("Error fetching download by ID: " + e.target.error);
     });
 };
+
+export const checkFileExists = async (fileName) => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], "readonly");
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.getAll();
+
+        request.onsuccess = () => {
+            const results = request.result;
+            const exists = results.some(item => item.fileName === fileName);
+            resolve(exists);
+        };
+        request.onerror = (e) => reject("Error checking file existence: " + e.target.error);
+    });
+};

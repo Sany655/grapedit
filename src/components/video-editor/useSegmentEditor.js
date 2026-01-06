@@ -50,6 +50,33 @@ export function useSegmentEditor(initialDuration = 0) {
         if (segments.length === 0) setActiveSegmentId(newSegment.id);
     };
 
+    const addClips = (newClipsData) => {
+        // newClipsData: [{ id, duration }]
+        let currentDuration = duration;
+        const newSegmentsRaw = newClipsData.map(clip => {
+            const start = currentDuration;
+            const end = currentDuration + clip.duration;
+            currentDuration = end;
+            return {
+                id: crypto.randomUUID(),
+                start,
+                end,
+                clipId: clip.id,
+                sourceStart: 0
+            };
+        });
+
+        const newSegments = [...segments, ...newSegmentsRaw];
+
+        setSegments(newSegments);
+        setDuration(currentDuration);
+        addToHistory(newSegments, null, currentDuration);
+
+        if (segments.length === 0 && newSegmentsRaw.length > 0) {
+            setActiveSegmentId(newSegmentsRaw[0].id);
+        }
+    };
+
     // Replaces initSegments - mostly used for single initial file or resets
     const initSegments = (dur) => {
         // Legacy support calling as addClip with a generic ID or wrapper
@@ -160,8 +187,54 @@ export function useSegmentEditor(initialDuration = 0) {
         }
     };
 
+    const replaceSegments = (orderedClips) => {
+        // orderedClips: array of clip objects
+        let currentDuration = 0;
+        const newSegments = orderedClips.map(clip => {
+            const start = currentDuration;
+            const end = currentDuration + clip.duration;
+            currentDuration = end;
+            return {
+                id: crypto.randomUUID(),
+                start,
+                end,
+                clipId: clip.id,
+                sourceStart: 0
+            };
+        });
+
+        setSegments(newSegments);
+        setDuration(currentDuration);
+        addToHistory(newSegments, null, currentDuration);
+    };
+
+    const reorderSegments = (fromIndex, toIndex) => {
+        if (fromIndex === toIndex) return;
+
+        const newSegmentsRaw = [...segments];
+        const [moved] = newSegmentsRaw.splice(fromIndex, 1);
+        newSegmentsRaw.splice(toIndex, 0, moved);
+
+        // Recalculate times for magnetic timeline
+        let currentStart = 0;
+        const newSegments = newSegmentsRaw.map(seg => {
+            const fileDuration = seg.end - seg.start;
+            const newSeg = {
+                ...seg,
+                start: currentStart,
+                end: currentStart + fileDuration
+            };
+            currentStart += fileDuration;
+            return newSeg;
+        });
+
+        setSegments(newSegments);
+        setDuration(currentStart); // Should remain same, but good to ensure
+        addToHistory(newSegments, activeSegmentId, currentStart);
+    };
+
     return {
         segments, activeSegmentId, historyIndex, duration,
-        setSegments, setActiveSegmentId, addClip, handleSplit, handleDeleteSegment, handleUndo, resetSegments, removeSegmentsByClipId
+        setSegments, setActiveSegmentId, addClip, addClips, handleSplit, handleDeleteSegment, handleUndo, resetSegments, removeSegmentsByClipId, replaceSegments, reorderSegments
     };
 }
