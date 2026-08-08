@@ -16,7 +16,7 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
     const {
         downloadProgress, downloadedBytes, totalBytesEst, downloadSpeed, isPaused, processingText, isProcessing, isFFmpegBusy,
         downloadStarted, videoFile: dlVideoFile, videoUrl: dlVideoUrl, fileName: dlFileName, loaded, ffmpegRef, currentDownloadId, resolutions, selectedResolution, setSelectedResolution,
-        setVideoFile: setDlVideoFile, setFileName: setDlFileName, startDownloadProcess, togglePause, cancelDownload, formatSize,
+        setVideoFile: setDlVideoFile, setVideoUrl: setDlVideoUrl, setFileName: setDlFileName, startDownloadProcess, togglePause, cancelDownload, formatSize,
         threadCount, setThreadCount
     } = useVideoDownload(initialVideo, initialType, initialTitle, initialReferer);
 
