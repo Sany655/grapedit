@@ -209,9 +209,19 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                         const playlists = [];
                         const localSegments = [];
 
+                        let initSegment = null;
                         for (let line of lines) {
                             line = line.trim();
-                            if (line && !line.startsWith('#')) {
+                            if (line.startsWith('#EXT-X-MAP:')) {
+                                const match = line.match(/URI="([^"]+)"/);
+                                if (match && match[1]) {
+                                    let mapUrl = match[1];
+                                    if (!mapUrl.startsWith('http')) {
+                                        mapUrl = baseUrl + mapUrl;
+                                    }
+                                    initSegment = mapUrl;
+                                }
+                            } else if (line && !line.startsWith('#')) {
                                 let finalUrl = line;
                                 if (!line.startsWith('http')) {
                                     finalUrl = baseUrl + line;
@@ -223,6 +233,11 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                                     localSegments.push(finalUrl);
                                 }
                             }
+                        }
+
+                        if (initSegment) {
+                            // The init segment MUST be the first chunk downloaded so the file header is correct
+                            localSegments.unshift(initSegment);
                         }
 
                         if (playlists.length > 0) {
