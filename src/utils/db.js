@@ -60,8 +60,9 @@ export const saveDownload = async (download) => {
         const store = transaction.objectStore(STORE_NAME);
         const request = store.put(download); // put handles both add and update
 
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = (event) => reject("Error saving download: " + event.target.error);
+        transaction.oncomplete = () => resolve(request.result);
+        transaction.onerror = (event) => reject(new Error("Error saving download: " + event.target.error));
+        request.onerror = (event) => reject(new Error("Request error saving download: " + event.target.error));
     });
 };
 

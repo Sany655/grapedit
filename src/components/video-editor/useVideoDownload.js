@@ -312,8 +312,6 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                         const mp4Blob = new Blob([mp4Data.buffer], { type: 'video/mp4' });
 
                         if (!cancelRef.current) {
-                            setVideoFile(mp4Blob);
-                            setVideoUrl(URL.createObjectURL(mp4Blob));
                             await saveDownload({
                                 id: downloadId,
                                 url: targetVideo,
@@ -323,6 +321,9 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                                 blob: mp4Blob,
                                 createdAt: new Date().toISOString()
                             });
+                            // ONLY set videoFile after DB save completes, to avoid race conditions
+                            setVideoFile(mp4Blob);
+                            setVideoUrl(URL.createObjectURL(mp4Blob));
                         }
                         await ffmpeg.deleteFile(tsName);
                         await ffmpeg.deleteFile(mp4Name);
@@ -438,9 +439,6 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                     const blob = new Blob(chunks, { type: 'video/mp4' });
                     const blobUrl = URL.createObjectURL(blob);
 
-                    setVideoFile(blob);
-                    setVideoUrl(blobUrl);
-
                     await saveDownload({
                         id: downloadId,
                         url: targetVideo,
@@ -450,6 +448,10 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                         blob: blob,
                         createdAt: new Date().toISOString()
                     });
+
+                    // ONLY set videoFile after DB save completes, to avoid race conditions
+                    setVideoFile(blob);
+                    setVideoUrl(blobUrl);
 
                 } catch (error) {
                     console.error("Download failed:", error);
