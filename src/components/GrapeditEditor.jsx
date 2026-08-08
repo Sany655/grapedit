@@ -19,6 +19,9 @@ export default function GrapeditEditor() {
     const [loaded, setLoaded] = useState(false);
     const ffmpegRef = useRef(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [renderingMode, setRenderingMode] = useState('local'); // 'local' or 'cloud'
+    const [cloudUrl, setCloudUrl] = useState('');
+    const [showSettings, setShowSettings] = useState(false);
 
     // Editor State
     const [clips, setClips] = useState([]); // { id, url, file, name, duration }
@@ -463,6 +466,54 @@ export default function GrapeditEditor() {
     const quickMerge = async (items, mode) => {
         if (!items || items.length === 0) return;
 
+        if (renderingMode === 'cloud' && cloudUrl) {
+            setIsExporting(true);
+            setShowSettings(false);
+            setShowExportModal(false);
+            const toastId = toast.loading("Uploading and merging on Cloud...");
+            try {
+                // 1. Upload files
+                const fileMap = {};
+                for (const item of items) {
+                    const formData = new FormData();
+                    formData.append('video', item.blob, item.fileName);
+                    const res = await fetch(`${cloudUrl}/upload`, { method: 'POST', body: formData });
+                    const data = await res.json();
+                    if (!data.success) throw new Error("Upload failed");
+                    fileMap[item.id] = data.filename;
+                }
+
+                // 2. Request Render (Hack: use trim API but with 0 to duration)
+                const segmentsPayload = items.map(item => ({
+                    sourceFile: fileMap[item.id],
+                    sourceStart: 0,
+                    duration: item.duration || 10
+                }));
+                
+                toast.loading("Rendering on Cloud...", { id: toastId });
+                const renderRes = await fetch(`${cloudUrl}/render`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ exportName: "merged", segments: segmentsPayload })
+                });
+                const renderData = await renderRes.json();
+                
+                if (renderData.success) {
+                    toast.success("Cloud Merge Complete!", { id: toastId });
+                    window.open(renderData.url, '_blank');
+                } else {
+                    throw new Error(renderData.error || "Render failed");
+                }
+            } catch (e) {
+                console.error("Cloud merge error", e);
+                toast.error("Cloud merge failed: " + e.message, { id: toastId });
+            } finally {
+                setIsExporting(false);
+                setMergeItems([]);
+            }
+            return;
+        }
+
         if (!loaded) {
             toast.error("Engine loading...");
             return;
@@ -556,6 +607,65 @@ export default function GrapeditEditor() {
         // mode: 'fast' | 'fit' | 'fill' | 'blur'
         const destinations = exportDestinations;
         if (clips.length === 0) return;
+        if (renderingMode === 'cloud' && cloudUrl) {
+            setIsExporting(true);
+            setShowExportModal(false);
+            const toastId = toast.loading("Uploading and processing on Cloud...");
+            try {
+                const activeSegments = segments.slice().sort((a, b) => a.start - a.start);
+                const usedClipIds = [...new Set(activeSegments.map(s => s.clipId))];
+                const fileMap = {};
+
+                // 1. Upload used clips
+                for (const clipId of usedClipIds) {
+                    const clip = clips.find(c => c.id === clipId);
+                    if (clip) {
+                        const formData = new FormData();
+                        formData.append('video', clip.file, clip.name);
+                        const res = await fetch(`${cloudUrl}/upload`, { method: 'POST', body: formData });
+                        const data = await res.json();
+                        if (!data.success) throw new Error("Upload failed");
+                        fileMap[clipId] = data.filename;
+                    }
+                }
+
+                // 2. Request Render
+                const segmentsPayload = activeSegments.map(seg => ({
+                    sourceFile: fileMap[seg.clipId],
+                    sourceStart: seg.sourceStart,
+                    duration: seg.end - seg.start
+                }));
+
+                toast.loading("Rendering on Cloud GPUs...", { id: toastId });
+                const renderRes = await fetch(`${cloudUrl}/render`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ exportName: exportFileName || "video", segments: segmentsPayload })
+                });
+                const renderData = await renderRes.json();
+
+                if (renderData.success) {
+                    toast.success("Cloud Export Complete!", { id: toastId });
+                    // Download it
+                    const a = document.createElement('a');
+                    a.href = renderData.url;
+                    a.download = `${exportFileName || "video"}.mp4`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                } else {
+                    throw new Error(renderData.error || "Render failed");
+                }
+            } catch (e) {
+                console.error("Cloud export error", e);
+                toast.error("Cloud export failed: " + e.message, { id: toastId });
+            } finally {
+                setIsExporting(false);
+                setExportDestinations([]);
+            }
+            return;
+        }
+
         if (!loaded) {
             alert("Video Engine is loading...");
             return;
@@ -882,12 +992,76 @@ export default function GrapeditEditor() {
                 totalDuration={mergeItems.length > 0 ? mergeItems.reduce((acc, i) => acc + (i.duration || 0), 0) : duration}
             />
 
-            <div className="flex items-center justify-end mb-4">
+            <div className="flex items-center justify-between mb-4">
+                <button 
+                    onClick={() => setShowSettings(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm border border-slate-700 transition-colors"
+                >
+                    <Settings size={16} />
+                    Settings
+                </button>
                 <div className="flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full ${loaded ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    <span className="text-sm text-slate-400">{loaded ? 'Engine Ready' : 'Loading Engine...'}</span>
+                    <span className={`h-2 w-2 rounded-full ${renderingMode === 'cloud' ? 'bg-purple-500' : (loaded ? 'bg-green-500' : 'bg-red-500')}`}></span>
+                    <span className="text-sm text-slate-400">
+                        {renderingMode === 'cloud' ? 'Cloud Mode Active' : (loaded ? 'Local Engine Ready' : 'Loading Local Engine...')}
+                    </span>
                 </div>
             </div>
+
+            {/* Settings Modal */}
+            {showSettings && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-lg font-bold flex items-center gap-2"><Settings size={20} /> Settings</h2>
+                            <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-white"><X size={20} /></button>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Rendering Architecture</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button 
+                                        onClick={() => setRenderingMode('local')}
+                                        className={`py-2 rounded border transition-colors ${renderingMode === 'local' ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'}`}
+                                    >
+                                        Local (Browser)
+                                    </button>
+                                    <button 
+                                        onClick={() => setRenderingMode('cloud')}
+                                        className={`py-2 rounded border transition-colors ${renderingMode === 'cloud' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'}`}
+                                    >
+                                        Cloud (Colab)
+                                    </button>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-2">
+                                    {renderingMode === 'local' 
+                                        ? "Uses your device's CPU. Best for privacy and small videos." 
+                                        : "Uses Google Colab GPUs. Best for old laptops and heavy 1080p edits."}
+                                </p>
+                            </div>
+
+                            {renderingMode === 'cloud' && (
+                                <div className="pt-4 border-t border-slate-700">
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Cloud Backend URL (ngrok)</label>
+                                    <input 
+                                        type="url" 
+                                        value={cloudUrl}
+                                        onChange={(e) => setCloudUrl(e.target.value)}
+                                        placeholder="https://xyz.ngrok-free.app"
+                                        className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500"
+                                    />
+                                    <p className="text-xs text-slate-500 mt-2">
+                                        Run the <code className="bg-slate-900 px-1 rounded text-purple-400">grapedit-colab.ipynb</code> notebook in Google Colab and paste the generated public URL here.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <button onClick={() => setShowSettings(false)} className="w-full mt-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-medium">Done</button>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
                 {/* Left Col: Player & Bin */}
