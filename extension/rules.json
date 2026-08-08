@@ -11,7 +11,7 @@
     },
     "condition": {
       "initiatorDomains": ["localhost", "grapedit.vercel.app"],
-      "resourceTypes": ["xmlhttprequest", "media", "fetch", "other"]
+      "resourceTypes": ["xmlhttprequest", "media", "other"]
     }
   }
 ]
