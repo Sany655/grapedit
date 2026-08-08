@@ -43,6 +43,13 @@
          "run_at": "document_start"
       }
    ],
+   "declarative_net_request": {
+      "rule_resources": [{
+         "id": "ruleset_1",
+         "enabled": true,
+         "path": "rules.json"
+      }]
+   },
    "default_locale": "en",
    "description": "__MSG_manifest_description__",
    "homepage_url": "https://grapedit.vercel.app/",

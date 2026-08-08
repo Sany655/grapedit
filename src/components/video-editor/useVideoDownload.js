@@ -30,7 +30,8 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
 
             if (initialVideo.includes('.m3u8') || initialType === 'application/x-mpegURL') {
                 try {
-                    const fetchProxy = (url) => `/api/proxy?url=${encodeURIComponent(url)}&referer=${encodeURIComponent(initialReferer || "")}`;
+                    // We no longer need the Vercel proxy because the Chrome extension handles CORS
+                    const fetchProxy = (url) => url;
                     const response = await fetch(fetchProxy(initialVideo));
                     if (!response.ok) return;
                     const text = await response.text();
@@ -185,7 +186,8 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                 });
 
                 try {
-                    const fetchProxy = (url) => `/api/proxy?url=${encodeURIComponent(url)}&referer=${encodeURIComponent(initialReferer || "")}`;
+                    // Bypass Vercel proxy, relying on extension CORS injection
+                    const fetchProxy = (url) => url;
                     const response = await fetch(fetchProxy(targetVideo), { signal });
                     if (!response.ok) {
                         const errorText = await response.text();
@@ -389,7 +391,8 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                         createdAt: new Date().toISOString()
                     });
 
-                    const fetchProxy = (url) => `/api/proxy?url=${encodeURIComponent(url)}&referer=${encodeURIComponent(initialReferer || "")}`;
+                    // Bypass proxy for direct files too
+                    const fetchProxy = (url) => url;
                     const response = await fetch(fetchProxy(targetVideo), { signal });
 
                     if (!response.ok) throw new Error(`Download failed: ${response.status}`);
