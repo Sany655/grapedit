@@ -98,6 +98,84 @@
         .inject-label:has(input[type="checkbox"]:checked) .inject-on {
             display: block !important;
         }
+        /* Dark Theme Overrides to match website */
+        body, html {
+            background-color: #020617 !important; /* bg-slate-950 */
+            color: #f8fafc !important; /* text-slate-50 */
+        }
+        /* Top bar */
+        .py-2.px-3.mt-1.mx-1.rounded-2[style*="background-color: #6f42c1"] {
+            background-color: #0f172a !important; /* bg-slate-900 */
+            border: 1px solid #1e293b !important;
+        }
+        .fs-5.fw-bolder.ms-1.bg-white.px-2.rounded-pill {
+            background-color: transparent !important;
+            background-image: linear-gradient(to right, #60a5fa, #4ade80) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        .bg-warning-subtle {
+            background-color: #1e1b4b !important;
+            color: #a5b4fc !important;
+            border-color: #312e81 !important;
+        }
+        .text-warning, .text-warning-emphasis {
+            color: #818cf8 !important;
+        }
+        .text-black-50, .text-secondary, .text-body-secondary {
+            color: #94a3b8 !important;
+        }
+        .bg-white, .bg-light-subtle {
+            background-color: #0f172a !important;
+            color: #f8fafc !important;
+        }
+        .border-bottom, .border-top, .border {
+            border-color: #1e293b !important;
+        }
+        .border-2 {
+            border-width: 1px !important;
+        }
+        .btn-outline-dark {
+            border-color: #3b82f6 !important;
+            color: #60a5fa !important;
+        }
+        .btn-outline-dark:hover {
+            background-color: #3b82f6 !important;
+            color: #fff !important;
+        }
+        .text-purple {
+            color: #818cf8 !important;
+        }
+        .bg-secondary-subtle {
+            background-color: #1e293b !important;
+            color: #cbd5e1 !important;
+        }
+        .bg-dark-subtle {
+            background-color: #0f172a !important;
+        }
+        .text-dark-emphasis {
+            color: #f8fafc !important;
+        }
+        .form-control, .form-select {
+            background-color: #0f172a !important;
+            border-color: #1e293b !important;
+            color: #f8fafc !important;
+        }
+        .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%) !important;
+        }
+        .name-ellipsis {
+            background: linear-gradient(to left, transparent, #020617) !important;
+        }
+        .btn-danger {
+            background: linear-gradient(to right, #2563eb, #0891b2) !important;
+            border: none !important;
+        }
+        .btn-danger:hover {
+            background: linear-gradient(to right, #1d4ed8, #0e7490) !important;
+        }
     </style>
 </head>
 

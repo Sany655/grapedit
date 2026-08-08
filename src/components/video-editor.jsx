@@ -139,9 +139,18 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
 
                 {/* Show local preview if download finished? */}
                 {dlVideoUrl && (
-                    <div className="">
-                        <video controls src={dlVideoUrl} className="w-full max-h-[500px]" />
-                        <div className="p-4 bg-slate-800 flex justify-between items-center rounded-b-xl border border-t-0 border-slate-700">
+                    <div className="flex flex-col gap-2">
+                        {initialReferer && (
+                            <div className="text-sm bg-slate-800/80 p-3 rounded-lg border border-slate-700/50 flex items-center justify-between shadow-sm">
+                                <span className="text-slate-400 font-medium shrink-0 mr-4">Original Source:</span>
+                                <a href={initialReferer} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline truncate text-right">
+                                    {initialReferer}
+                                </a>
+                            </div>
+                        )}
+                        <div className="rounded-xl overflow-hidden shadow-xl border border-slate-700">
+                            <video controls src={dlVideoUrl} className="w-full max-h-[500px] bg-black" />
+                            <div className="p-4 bg-slate-800 flex justify-between items-center border-t-0">
                             <span className="text-sm text-slate-300 truncate max-w-[200px]">Preview: {dlFileName}</span>
                             <div className="flex items-center gap-2">
                                 {dlVideoUrl && (
@@ -158,6 +167,7 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
                                         <Edit2 size={16} /> Open in Editor
                                     </button>
                                 )}
+                            </div>
                             </div>
                         </div>
                     </div>
