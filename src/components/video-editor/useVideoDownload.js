@@ -585,7 +585,7 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
     return {
         downloadProgress, downloadedBytes, totalBytesEst, downloadSpeed, isPaused, processingText, isProcessing, isFFmpegBusy,
         downloadStarted, videoFile, videoUrl, fileName, loaded, ffmpegRef, currentDownloadId, resolutions, selectedResolution, setSelectedResolution,
-        setVideoFile, setFileName: setDlFileName,
+        setVideoFile, setFileName,
         startDownloadProcess,
         togglePause,
         cancelDownload,
