@@ -30,8 +30,8 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
 
             if (initialVideo.includes('.m3u8') || initialType === 'application/x-mpegURL') {
                 try {
-                    // Use corsproxy.io to bypass CORS and Referer restrictions since we removed Vercel proxy
-                    const fetchProxy = (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+                    // Relying on extension CORS injection and Referer stripping
+                    const fetchProxy = (url) => url;
                     const response = await fetch(fetchProxy(initialVideo));
                     if (!response.ok) return;
                     const text = await response.text();
@@ -187,8 +187,8 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                 });
 
                 try {
-                    // Use corsproxy.io to bypass CORS and Referer restrictions
-                    const fetchProxy = (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+                    // Bypass Vercel proxy, relying on extension CORS injection and Referer stripping
+                    const fetchProxy = (url) => url;
                     const response = await fetch(fetchProxy(targetVideo), { signal });
                     if (!response.ok) {
                         const errorText = await response.text();
@@ -392,8 +392,8 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                         createdAt: new Date().toISOString()
                     });
 
-                    // Bypass proxy for direct files too, using corsproxy to avoid CORS issues
-                    const fetchProxy = (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+                    // Bypass proxy for direct files too, relying on extension CORS injection
+                    const fetchProxy = (url) => url;
                     const response = await fetch(fetchProxy(targetVideo), { signal });
 
                     if (!response.ok) throw new Error(`Download failed: ${response.status}`);
