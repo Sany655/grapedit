@@ -30,8 +30,8 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
 
             if (initialVideo.includes('.m3u8') || initialType === 'application/x-mpegURL') {
                 try {
-                    // We no longer need the Vercel proxy because the Chrome extension handles CORS
-                    const fetchProxy = (url) => url;
+                    // Use corsproxy.io to bypass CORS and Referer restrictions since we removed Vercel proxy
+                    const fetchProxy = (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
                     const response = await fetch(fetchProxy(initialVideo));
                     if (!response.ok) return;
                     const text = await response.text();
@@ -138,6 +138,7 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
         const targetVideo = (typeof overrideUrl === 'string' ? overrideUrl : null) || (selectedResolution ? selectedResolution.url : initialVideo);
 
         setDownloadStarted(true);
+        setVideoFile(null); // Reset video file before starting new download
         if (targetVideo) {
             if (targetVideo.includes('.m3u8') || initialType === 'application/x-mpegURL') {
                 setIsProcessing(true);
@@ -186,8 +187,8 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                 });
 
                 try {
-                    // Bypass Vercel proxy, relying on extension CORS injection
-                    const fetchProxy = (url) => url;
+                    // Use corsproxy.io to bypass CORS and Referer restrictions
+                    const fetchProxy = (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
                     const response = await fetch(fetchProxy(targetVideo), { signal });
                     if (!response.ok) {
                         const errorText = await response.text();
@@ -391,8 +392,8 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                         createdAt: new Date().toISOString()
                     });
 
-                    // Bypass proxy for direct files too
-                    const fetchProxy = (url) => url;
+                    // Bypass proxy for direct files too, using corsproxy to avoid CORS issues
+                    const fetchProxy = (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
                     const response = await fetch(fetchProxy(targetVideo), { signal });
 
                     if (!response.ok) throw new Error(`Download failed: ${response.status}`);
