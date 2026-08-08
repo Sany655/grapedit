@@ -8,8 +8,8 @@ export default function Navbar() {
         <nav className="fixed w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-white/5">
             <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                        <Scissors size={20} className="text-white" />
+                    <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
+                        <img src="/icon.png" alt="Grapedit Logo" className="w-full h-full object-cover" />
                     </div>
                     <span className="font-bold text-xl bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
                         Grapedit
