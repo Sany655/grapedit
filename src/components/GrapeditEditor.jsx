@@ -482,7 +482,7 @@ export default function GrapeditEditor() {
         return outputName;
     };
 
-    const quickMerge = async (items, mode) => {
+    const quickMerge = async (items, mode, clearSource) => {
         if (!items || items.length === 0) return;
 
         if (!loaded) {
@@ -582,7 +582,7 @@ export default function GrapeditEditor() {
 
 
 
-    const trimVideo = async (mode) => {
+    const trimVideo = async (mode, clearSource) => {
         // mode: 'fast' | 'fit' | 'fill' | 'blur'
         const destinations = exportDestinations;
         if (clips.length === 0) return;
@@ -916,11 +916,11 @@ export default function GrapeditEditor() {
                     setShowExportModal(false);
                     setMergeItems([]); // Clear on cancel
                 }}
-                onConfirm={(mode) => {
+                onConfirm={(mode, clearSource) => {
                     if (mergeItems.length > 0) {
-                        quickMerge(mergeItems, mode);
+                        quickMerge(mergeItems, mode, clearSource);
                     } else {
-                        trimVideo(mode);
+                        trimVideo(mode, clearSource);
                     }
                 }}
                 resolutionMismatch={resolutionMismatch}
