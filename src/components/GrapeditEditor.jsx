@@ -6,7 +6,7 @@ import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { toBlobURL } from "@ffmpeg/util";
 import { Upload, Scissors, Download, Loader2, Play, History, Trash2, Undo, Settings, Edit2, Save, X, AlertCircle, ChevronLeft, ChevronRight, Rewind, FastForward, SkipBack, SkipForward, RotateCcw } from "lucide-react";
 import DownloadManager from "./DownloadManager";
-import { saveDownload, getDownloadById, checkFileExists } from "../utils/db";
+import { saveDownload, getDownloadById, checkFileExists, deleteDownload } from "../utils/db";
 import { useSegmentEditor } from "./video-editor/useSegmentEditor";
 import { useSearchParams, useRouter } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
@@ -86,7 +86,7 @@ export default function GrapeditEditor() {
 
 
     // Handle adding a new clip
-    const addNewClip = (file, url, name) => {
+    const addNewClip = (file, url, name, dbId = null) => {
         const clipId = crypto.randomUUID();
         const tempVideo = document.createElement('video');
         tempVideo.src = url;
@@ -94,6 +94,7 @@ export default function GrapeditEditor() {
             const clipDuration = tempVideo.duration;
             const newClip = {
                 id: clipId,
+                dbId,
                 file,
                 url,
                 name,
@@ -257,7 +258,7 @@ export default function GrapeditEditor() {
                         let retries = 0;
                         const tryAdd = () => {
                             if (addNewClipRef.current) {
-                                addNewClipRef.current(item.blob, url, item.fileName);
+                                addNewClipRef.current(item.blob, url, item.fileName, item.id);
                                 toast.success("Video added to editor!");
                                 router.replace('/editor', { scroll: false });
                             } else if (retries < 10) {
@@ -562,6 +563,14 @@ export default function GrapeditEditor() {
                 try { await ffmpeg.deleteFile(fname); } catch (e) { }
             }
 
+            if (clearSource) {
+                const idsToDelete = items.map(i => i.id);
+                for (const id of idsToDelete) {
+                    await deleteDownload(id);
+                }
+                toast.success("Source files deleted to save space.");
+            }
+
         } catch (e) {
             console.error("Merge failed", e);
             toast.error("Merge failed", { id: toastId });
@@ -687,6 +696,19 @@ export default function GrapeditEditor() {
                 try { await ffmpeg.deleteFile(fname); } catch (e) { }
             }
 
+            if (clearSource) {
+                for (const clipId of usedClipIds) {
+                    const clip = clips.find(c => c.id === clipId);
+                    if (clip && clip.dbId) {
+                        await deleteDownload(clip.dbId);
+                    }
+                    removeSegmentsByClipId(clipId);
+                }
+                setClips(prev => prev.filter(c => !usedClipIds.includes(c.id)));
+                updateCurrentPlayerClipId(null);
+                toast.success("Source files deleted to save space.");
+            }
+
         } catch (error) {
             console.error("Export failed:", error);
             toast.error("Export failed! See console.");
@@ -797,7 +819,7 @@ export default function GrapeditEditor() {
                 onClose={() => setIsManagerOpen(false)}
                 onLoadVideo={(item) => {
                     const url = URL.createObjectURL(item.blob);
-                    addNewClip(item.blob, url, item.fileName);
+                    addNewClip(item.blob, url, item.fileName, item.id);
                     setIsManagerOpen(false);
                 }}
                 onLoadMultiple={async (items) => {
@@ -832,6 +854,7 @@ export default function GrapeditEditor() {
                                 const clipDuration = tempVideo.duration;
                                 newClipsData.push({
                                     id: clipId,
+                                    dbId: item.id,
                                     file: item.blob,
                                     url,
                                     name: item.fileName,

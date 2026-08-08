@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Check } from 'lucide-react';
 
 export function ExportOptionsModal({ isOpen, onClose, onConfirm, resolutionMismatch, totalDuration = 0 }) {
+    const [clearSource, setClearSource] = useState(false);
     if (!isOpen) return null;
 
     const formatEstimate = (videoDuration, multiplier) => {
@@ -65,7 +66,7 @@ export function ExportOptionsModal({ isOpen, onClose, onConfirm, resolutionMisma
                     {options.map((opt) => (
                         <button
                             key={opt.id}
-                            onClick={() => onConfirm(opt.id)}
+                            onClick={() => onConfirm(opt.id, clearSource)}
                             className={`w-full text-left p-4 rounded-lg border transition-all hover:bg-slate-800 flex gap-4 ${opt.recommended ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-slate-900/50'}`}
                         >
                             <span className="text-2xl">{opt.icon}</span>
@@ -85,6 +86,20 @@ export function ExportOptionsModal({ isOpen, onClose, onConfirm, resolutionMisma
                             </div>
                         </button>
                     ))}
+                </div>
+
+                <div className="mt-6 flex items-start gap-3 bg-slate-900/50 p-3 rounded border border-slate-700">
+                    <input 
+                        type="checkbox" 
+                        id="clearSource" 
+                        checked={clearSource}
+                        onChange={(e) => setClearSource(e.target.checked)}
+                        className="mt-1 w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500"
+                    />
+                    <label htmlFor="clearSource" className="text-sm text-slate-300">
+                        <span className="font-medium text-white block">Free up storage after export</span>
+                        Delete the original source clips used in this export from the browser database to save space.
+                    </label>
                 </div>
             </div>
         </div>
