@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { saveDownload, updateDownloadProgress } from "../../utils/db";
+import toast from 'react-hot-toast';
 
 export function useVideoDownload(initialVideo, initialType, initialTitle, initialReferer) {
     const [downloadProgress, setDownloadProgress] = useState(0);
@@ -136,6 +137,18 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
     const startDownloadProcess = async (overrideUrl = null) => {
         // Ensure overrideUrl is a string (it might be an event object from onClick)
         const targetVideo = (typeof overrideUrl === 'string' ? overrideUrl : null) || (selectedResolution ? selectedResolution.url : initialVideo);
+
+        if (navigator.storage && navigator.storage.estimate) {
+            try {
+                const estimate = await navigator.storage.estimate();
+                const freeSpace = estimate.quota - estimate.usage;
+                if (freeSpace < 500 * 1024 * 1024) {
+                    toast.error(`Warning: Low disk space (${Math.round(freeSpace / 1024 / 1024)}MB free). Downloads may crash.`);
+                }
+            } catch (e) {
+                console.warn("Storage estimate failed", e);
+            }
+        }
 
         setDownloadStarted(true);
         setVideoFile(null); // Reset video file before starting new download
@@ -289,8 +302,10 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                                 lastSpeedUpdate = now;
                             }
 
-                            setDownloadProgress(Math.round((completed / segments.length) * 100));
+                            const prog = Math.round((completed / segments.length) * 100);
+                            setDownloadProgress(prog);
                             setDownloadedBytes(totalBytes);
+                            document.title = `[${prog}%] Downloading...`;
 
                             if (completed % 5 === 0 || completed === segments.length) {
                                 updateDownloadProgress(downloadId, 'downloading', Math.round((completed / segments.length) * 100), totalBytes / ((Date.now() - startTime) / 1000));
@@ -318,6 +333,14 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                         const ffmpeg = ffmpegRef.current;
                         if (!ffmpeg.loaded) await load();
                         
+                        const progressHandler = ({ progress }) => {
+                            const p = Math.round(progress * 100);
+                            setDownloadProgress(p);
+                            setProcessingText(`Transmuxing to MP4... ${p}%`);
+                            document.title = `[${p}%] Transmuxing...`;
+                        };
+                        ffmpeg.on('progress', progressHandler);
+                        
                         // Enable FFmpeg logging to debug Transmux failures
                         ffmpeg.on('log', ({ message }) => {
                             console.log("[FFmpeg]", message);
@@ -328,6 +351,8 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
 
                         await ffmpeg.writeFile(tsName, await fetchFile(tsBlob));
                         const ret = await ffmpeg.exec(["-i", tsName, "-c", "copy", "-bsf:a", "aac_adtstoasc", mp4Name]);
+                        
+                        ffmpeg.off('progress', progressHandler);
                         
                         if (ret !== 0) {
                             throw new Error(`FFmpeg exec failed with code ${ret}`);
@@ -385,6 +410,7 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                     }
                 } finally {
                     if (abortControllerRef.current === controller) {
+                        document.title = "Grapedit";
                         setIsProcessing(false);
                         setIsFFmpegBusy(false); // Flag FFmpeg as NOT busy
                         setDownloadProgress(0);
@@ -467,6 +493,7 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                             if (total > 0) {
                                 const prog = Math.round((receivedLength / total) * 100);
                                 setDownloadProgress(prog);
+                                document.title = `[${prog}%] Downloading...`;
                                 updateDownloadProgress(downloadId, 'downloading', prog, receivedLength / ((now - startTime) / 1000));
                             }
                             setDownloadSpeed(receivedLength / ((now - startTime) / 1000));
@@ -497,6 +524,7 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                         alert("Failed to download file: " + error.message);
                     }
                 } finally {
+                    document.title = "Grapedit";
                     setIsProcessing(false);
                     setDownloadStarted(false);
                 }
