@@ -30,8 +30,8 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
 
             if (initialVideo.includes('.m3u8') || initialType === 'application/x-mpegURL') {
                 try {
-                    // Relying on extension CORS injection and Referer stripping
-                    const fetchProxy = (url) => url;
+                    // Use Vercel Proxy ONLY for the tiny .m3u8 playlist to bypass strict Referer/CORS blocks without using bandwidth
+                    const fetchProxy = (url) => `/api/proxy?url=${encodeURIComponent(url)}&referer=${encodeURIComponent(initialReferer || "")}`;
                     const response = await fetch(fetchProxy(initialVideo));
                     if (!response.ok) return;
                     const text = await response.text();
@@ -187,8 +187,8 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                 });
 
                 try {
-                    // Bypass Vercel proxy, relying on extension CORS injection and Referer stripping
-                    const fetchProxy = (url) => url;
+                    // Use Vercel Proxy ONLY for the playlist. This costs almost 0 bandwidth.
+                    const fetchProxy = (url) => `/api/proxy?url=${encodeURIComponent(url)}&referer=${encodeURIComponent(initialReferer || "")}`;
                     const response = await fetch(fetchProxy(targetVideo), { signal });
                     if (!response.ok) {
                         const errorText = await response.text();
@@ -256,7 +256,9 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                         }
 
                         try {
-                            const segResp = await fetch(fetchProxy(segmentUrl), { signal });
+                            // Direct fetch for chunks! This uses ZERO Vercel bandwidth!
+                            // Relies on Chrome extension injecting CORS headers and stripping Referer.
+                            const segResp = await fetch(segmentUrl, { signal });
                             if (!segResp.ok) throw new Error(`Failed to fetch segment ${segResp.status}`);
                             const buffer = await segResp.arrayBuffer();
                             segmentBuffers.push(new Uint8Array(buffer));
