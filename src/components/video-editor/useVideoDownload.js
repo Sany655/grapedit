@@ -302,12 +302,22 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                         setProcessingText("Transmuxing to MP4...");
                         const ffmpeg = ffmpegRef.current;
                         if (!ffmpeg.loaded) await load();
+                        
+                        // Enable FFmpeg logging to debug Transmux failures
+                        ffmpeg.on('log', ({ message }) => {
+                            console.log("[FFmpeg]", message);
+                        });
 
                         const tsName = "download.ts";
                         const mp4Name = "download.mp4";
 
                         await ffmpeg.writeFile(tsName, await fetchFile(tsBlob));
-                        await ffmpeg.exec(["-i", tsName, "-c", "copy", mp4Name]);
+                        const ret = await ffmpeg.exec(["-i", tsName, "-c", "copy", "-bsf:a", "aac_adtstoasc", mp4Name]);
+                        
+                        if (ret !== 0) {
+                            throw new Error(`FFmpeg exec failed with code ${ret}`);
+                        }
+                        
                         const mp4Data = await ffmpeg.readFile(mp4Name);
                         const mp4Blob = new Blob([mp4Data.buffer], { type: 'video/mp4' });
 
@@ -331,8 +341,21 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                     } catch (convErr) {
                         if (convErr.message === "Download cancelled by user") throw convErr;
                         console.error("Transmux failed:", convErr);
+                        
+                        // Fallback: save the .ts file so the Editor at least finds it in the database
+                        await saveDownload({
+                            id: downloadId,
+                            url: targetVideo,
+                            fileName: localFileName.replace('.mp4', '.ts'),
+                            status: 'completed',
+                            progress: 100,
+                            blob: tsBlob,
+                            createdAt: new Date().toISOString()
+                        });
+                        
                         setVideoFile(tsBlob);
                         setVideoUrl(URL.createObjectURL(tsBlob));
+                        alert("Transmux failed. The video was saved as a raw TS file. It might not play in the browser editor.");
                     }
 
                 } catch (error) {
