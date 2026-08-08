@@ -22,6 +22,12 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
     const [currentDownloadId, setCurrentDownloadId] = useState(null);
     const [resolutions, setResolutions] = useState([]);
     const [selectedResolution, setSelectedResolution] = useState(null);
+    const [threadCount, setThreadCount] = useState(3);
+    const threadCountRef = useRef(threadCount);
+
+    useEffect(() => {
+        threadCountRef.current = threadCount;
+    }, [threadCount]);
 
     useEffect(() => {
         const checkResolutions = async () => {
@@ -269,52 +275,96 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
                         }
                     }
 
-                    const segmentBuffers = [];
+                    const segmentBuffers = new Array(segments.length);
                     let completed = 0;
                     let totalBytes = 0;
                     let startTime = Date.now();
                     let lastSpeedUpdate = Date.now();
+                    let currentIndex = 0;
+                    let activeWorkers = 0;
 
-                    for (const segmentUrl of segments) {
-                        if (cancelRef.current) throw new Error("Download cancelled by user");
-                        while (pauseRef.current) {
-                            if (cancelRef.current) throw new Error("Download cancelled by user");
-                            await new Promise(r => setTimeout(r, 500));
-                            lastSpeedUpdate = Date.now();
-                        }
+                    await new Promise((resolve, reject) => {
+                        let hasError = false;
 
-                        try {
-                            // Direct fetch for chunks! This uses ZERO Vercel bandwidth!
-                            // Relies on Chrome extension injecting CORS headers and stripping Referer.
-                            const segResp = await fetch(segmentUrl, { signal });
-                            if (!segResp.ok) throw new Error(`Failed to fetch segment ${segResp.status}`);
-                            const buffer = await segResp.arrayBuffer();
-                            segmentBuffers.push(new Uint8Array(buffer));
-                            completed++;
-                            totalBytes += buffer.byteLength;
+                        const runWorker = async () => {
+                            while (currentIndex < segments.length && !hasError) {
+                                if (cancelRef.current) { hasError = true; reject(new Error("Download cancelled by user")); return; }
+                                while (pauseRef.current) {
+                                    if (cancelRef.current) { hasError = true; reject(new Error("Download cancelled by user")); return; }
+                                    await new Promise(r => setTimeout(r, 500));
+                                    lastSpeedUpdate = Date.now();
+                                }
+                                
+                                // Dynamic concurrency limit check
+                                if (activeWorkers > threadCountRef.current) {
+                                    activeWorkers--;
+                                    return; // Retire this worker
+                                }
 
-                            if (completed === 1) setTotalBytesEst(buffer.byteLength * segments.length);
+                                const index = currentIndex++;
+                                const segmentUrl = segments[index];
 
-                            const now = Date.now();
-                            if (now - lastSpeedUpdate > 500) {
-                                const timeDiff = (now - startTime) / 1000;
-                                if (timeDiff > 0) setDownloadSpeed(totalBytes / timeDiff);
-                                lastSpeedUpdate = now;
+                                try {
+                                    const segResp = await fetch(segmentUrl, { signal });
+                                    if (!segResp.ok) throw new Error(`Failed to fetch segment ${segResp.status}`);
+                                    const buffer = await segResp.arrayBuffer();
+                                    segmentBuffers[index] = new Uint8Array(buffer);
+                                    
+                                    completed++;
+                                    totalBytes += buffer.byteLength;
+
+                                    if (completed === 1) setTotalBytesEst(buffer.byteLength * segments.length);
+
+                                    const now = Date.now();
+                                    if (now - lastSpeedUpdate > 500) {
+                                        const timeDiff = (now - startTime) / 1000;
+                                        if (timeDiff > 0) setDownloadSpeed(totalBytes / timeDiff);
+                                        lastSpeedUpdate = now;
+                                    }
+
+                                    const prog = Math.round((completed / segments.length) * 100);
+                                    setDownloadProgress(prog);
+                                    setDownloadedBytes(totalBytes);
+                                    document.title = `[${prog}%] Downloading...`;
+
+                                    if (completed % 5 === 0 || completed === segments.length) {
+                                        updateDownloadProgress(downloadId, 'downloading', prog, totalBytes / ((Date.now() - startTime) / 1000));
+                                    }
+
+                                    if (completed === segments.length) {
+                                        resolve();
+                                    }
+                                } catch (err) {
+                                    if (err.name === 'AbortError') err = new Error("Download cancelled by user");
+                                    console.error("Failed to download segment", segmentUrl, err);
+                                    if (!hasError) {
+                                        hasError = true;
+                                        reject(err);
+                                    }
+                                    return;
+                                }
                             }
+                            activeWorkers--;
+                        };
 
-                            const prog = Math.round((completed / segments.length) * 100);
-                            setDownloadProgress(prog);
-                            setDownloadedBytes(totalBytes);
-                            document.title = `[${prog}%] Downloading...`;
-
-                            if (completed % 5 === 0 || completed === segments.length) {
-                                updateDownloadProgress(downloadId, 'downloading', Math.round((completed / segments.length) * 100), totalBytes / ((Date.now() - startTime) / 1000));
+                        const spawnWorkers = () => {
+                            if (hasError) return;
+                            while (activeWorkers < threadCountRef.current && currentIndex < segments.length) {
+                                activeWorkers++;
+                                runWorker();
                             }
-                        } catch (err) {
-                            if (err.name === 'AbortError') throw new Error("Download cancelled by user");
-                            console.error("Failed to download segment", segmentUrl, err);
-                        }
-                    }
+                        };
+
+                        spawnWorkers();
+
+                        const threadCheckInterval = setInterval(() => {
+                            if (completed >= segments.length || hasError || cancelRef.current) {
+                                clearInterval(threadCheckInterval);
+                                return;
+                            }
+                            spawnWorkers();
+                        }, 500);
+                    });
 
                     let totalLength = 0;
                     segmentBuffers.forEach(buf => totalLength += buf.length);
@@ -535,6 +585,12 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
     return {
         downloadProgress, downloadedBytes, totalBytesEst, downloadSpeed, isPaused, processingText, isProcessing, isFFmpegBusy,
         downloadStarted, videoFile, videoUrl, fileName, loaded, ffmpegRef, currentDownloadId, resolutions, selectedResolution, setSelectedResolution,
-        setVideoFile, setVideoUrl, setFileName, startDownloadProcess, togglePause, cancelDownload, formatSize
+        setVideoFile, setFileName: setDlFileName,
+        startDownloadProcess,
+        togglePause,
+        cancelDownload,
+        formatSize,
+        threadCount,
+        setThreadCount
     };
 }

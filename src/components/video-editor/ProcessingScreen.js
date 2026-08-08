@@ -12,7 +12,9 @@ export function ProcessingScreen({
     downloadProgress,
     onTogglePause,
     onCancel,
-    fileName
+    fileName,
+    threadCount,
+    setThreadCount
 }) {
     if (!isProcessing) return null;
 
@@ -65,6 +67,26 @@ export function ProcessingScreen({
                                     <X size={14} /> Cancel
                                 </button>
                             </div>
+                        </div>
+
+                        <div className="mt-4 pt-4 border-t border-slate-700/50">
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-xs text-slate-400">Concurrent Connections (Threads)</label>
+                                <span className="text-xs font-mono bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded">
+                                    {threadCount} {threadCount === 1 ? 'Thread' : 'Threads'}
+                                </span>
+                            </div>
+                            <input 
+                                type="range" 
+                                min="1" 
+                                max="5" 
+                                value={threadCount || 3} 
+                                onChange={(e) => setThreadCount(parseInt(e.target.value))}
+                                className="w-full accent-blue-500 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <p className="text-[10px] text-slate-500 mt-1">
+                                Higher threads download faster but use more CPU/network. Changes apply instantly.
+                            </p>
                         </div>
                     </div>
                 )}
