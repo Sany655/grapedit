@@ -182,7 +182,11 @@ export default function GrapeditEditor() {
                     newSegmentsData.push({ id: clipId, duration: clipDuration });
                     resolve();
                 };
-                tempVideo.onerror = () => resolve(); // validation?
+                tempVideo.onerror = (e) => {
+                    toast.error("Failed to load video metadata. The file may be corrupted.", { duration: 5000 });
+                    console.error("Video load error", e);
+                    resolve();
+                };
             });
         }
 
@@ -242,20 +246,37 @@ export default function GrapeditEditor() {
 
     useEffect(() => {
         const fileId = searchParams.get('fileId');
-        if (fileId && addNewClipRef.current && processedFileIdRef.current !== fileId) {
+        if (fileId && processedFileIdRef.current !== fileId) {
             processedFileIdRef.current = fileId; // Mark as processing/processed
 
             const loadFromDb = async () => {
+                toast("Catching downloaded video...", { icon: '⏳' });
                 try {
                     const item = await getDownloadById(fileId);
                     if (item && item.blob) {
                         const url = URL.createObjectURL(item.blob);
-                        addNewClipRef.current(item.blob, url, item.fileName);
-                        // Clear param to avoid duplicate add on refresh
-                        router.replace('/editor', { scroll: false });
+                        
+                        // Fallback in case addNewClipRef is not ready instantly
+                        let retries = 0;
+                        const tryAdd = () => {
+                            if (addNewClipRef.current) {
+                                addNewClipRef.current(item.blob, url, item.fileName);
+                                toast.success("Video added to editor!");
+                                router.replace('/editor', { scroll: false });
+                            } else if (retries < 10) {
+                                retries++;
+                                setTimeout(tryAdd, 100);
+                            } else {
+                                toast.error("Editor not ready to receive video.");
+                            }
+                        };
+                        tryAdd();
+                    } else {
+                        toast.error("Video not found in local database.");
                     }
                 } catch (e) {
-                    console.error("Failed to auto-load text", e);
+                    console.error("Failed to auto-load video", e);
+                    toast.error("Failed to load video from database.");
                 }
             };
             loadFromDb();
