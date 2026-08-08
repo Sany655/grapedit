@@ -141,11 +141,24 @@ export default function VideoEditor({ initialVideo, initialType, initialTitle, i
                 {dlVideoUrl && (
                     <div className="">
                         <video controls src={dlVideoUrl} className="w-full max-h-[500px]" />
-                        <div className="p-4 bg-slate-800 flex justify-between items-center">
-                            <span className="text-sm text-slate-300">Preview: {dlFileName}</span>
-                            {dlVideoFile && (<button onClick={() => router.push(`/editor?fileId=${currentDownloadId}`)} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm flex items-center gap-2">
-                                <Edit2 size={16} /> Open in Editor
-                            </button>)}
+                        <div className="p-4 bg-slate-800 flex justify-between items-center rounded-b-xl border border-t-0 border-slate-700">
+                            <span className="text-sm text-slate-300 truncate max-w-[200px]">Preview: {dlFileName}</span>
+                            <div className="flex items-center gap-2">
+                                {dlVideoUrl && (
+                                    <a 
+                                        href={dlVideoUrl} 
+                                        download={`${dlFileName}.mp4`}
+                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm flex items-center gap-2 transition-colors"
+                                    >
+                                        <Download size={16} /> Save to PC
+                                    </a>
+                                )}
+                                {dlVideoFile && (
+                                    <button onClick={() => router.push(`/editor?fileId=${currentDownloadId}`)} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm flex items-center gap-2 transition-colors">
+                                        <Edit2 size={16} /> Open in Editor
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
