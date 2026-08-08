@@ -30,6 +30,11 @@ export function useVideoDownload(initialVideo, initialType, initialTitle, initia
     }, [threadCount]);
 
     useEffect(() => {
+        if (initialVideo && !videoUrl) setVideoUrl(initialVideo);
+        if (initialTitle && fileName === "source-video.mp4") setFileName(`${initialTitle}.mp4`);
+    }, [initialVideo, initialTitle]);
+
+    useEffect(() => {
         const checkResolutions = async () => {
             if (!initialVideo) return;
             setResolutions([]);
